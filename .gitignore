@@ -1,0 +1,12 @@
+# Virtual environment
+venv/
+
+# Database file (dibuat ulang saat setup)
+pacemate.db
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Folder nested (salinan lama, tidak diperlukan)
+pacemate/

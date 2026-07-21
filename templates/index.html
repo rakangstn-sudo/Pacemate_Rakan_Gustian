@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Beranda{% endblock %}
+
+{% block content %}
+<div class="row align-items-center g-5 py-4">
+    <div class="col-lg-7">
+        <h1 class="fw-bold mb-3">Selamat Datang di PaceMate</h1>
+        <p class="lead">
+            PaceMate adalah Sistem Informasi Pengatur Pace Lari yang membantu
+            pelari — terutama pemula — menyusun jadwal latihan mingguan dengan
+            <strong>pace (kecepatan) yang tepat sesuai kemampuan mereka</strong>.
+        </p>
+
+        <h5 class="mt-4">Masalah yang Diselesaikan</h5>
+        <p>
+            Banyak pelari pemula berlatih tanpa arahan pace yang jelas —
+            berlari terlalu cepat saat sesi easy, atau tidak cukup intens saat
+            sesi tempo/interval. Pola latihan yang tidak terukur seperti ini
+            meningkatkan risiko <strong>cedera</strong> dan <strong>burnout</strong>,
+            karena tubuh tidak diberi kombinasi beban dan pemulihan yang wajar.
+        </p>
+
+        <h5 class="mt-4">Bagaimana PaceMate Membantu</h5>
+        <ul>
+            <li>Menghitung <strong>VDOT</strong> (estimasi kapasitas aerobik) dari waktu PR lari 5K, menggunakan formula Daniels-Gilbert.</li>
+            <li>Menyusun <strong>jadwal latihan 7 hari</strong> lengkap dengan jenis latihan, jarak, dan target pace per sesi.</li>
+            <li>Mencatat <strong>sesi latihan aktual</strong> dan menghitung pace hasil secara otomatis.</li>
+            <li>Menampilkan <strong>progres mingguan</strong> setiap pelari secara terbuka.</li>
+        </ul>
+
+        <div class="mt-4 d-flex gap-2">
+            <a href="{{ url_for('jadwal') }}" class="btn btn-primary">Buat Jadwal Latihan Saya</a>
+            <a href="{{ url_for('progres') }}" class="btn btn-outline-secondary">Lihat Progres Pelari</a>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase text-muted small">Alur Singkat</h6>
+                <ol class="mb-0 ps-3">
+                    <li class="mb-2">Masukkan waktu PR 5K &amp; level lari Anda.</li>
+                    <li class="mb-2">Dapatkan jadwal latihan 7 hari dengan pace yang dipersonalisasi.</li>
+                    <li class="mb-2">Jalani latihan, lalu laporkan hasilnya lewat form "Lapor Sesi Latihan".</li>
+                    <li>Pantau progres mingguan Anda di halaman "Progres".</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

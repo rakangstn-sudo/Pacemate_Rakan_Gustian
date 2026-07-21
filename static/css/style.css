@@ -1,0 +1,15 @@
+/* style.css
+   Styling kustom tambahan di luar Bootstrap default. */
+
+body {
+    background-color: #f5f7fa;
+}
+
+.navbar-brand {
+    letter-spacing: 0.5px;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+}

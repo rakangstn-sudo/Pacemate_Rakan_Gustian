@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Generator Jadwal{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Generator Jadwal Latihan Mingguan</h2>
+<p class="text-muted">
+    Masukkan waktu PR (personal record) lari 5K dan level Anda. Sistem akan
+    menghitung VDOT (estimasi kapasitas aerobik) lalu menyusun jadwal 7 hari
+    dengan target pace per jenis latihan, menggunakan formula VDOT
+    Daniels-Gilbert.
+</p>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('jadwal') }}" class="row g-3">
+            <div class="col-md-6">
+                <label for="pr_menit" class="form-label">Waktu PR Lari 5K (menit)</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    min="10"
+                    max="60"
+                    class="form-control"
+                    id="pr_menit"
+                    name="pr_menit"
+                    value="{{ pr_menit_input if pr_menit_input is not none else '' }}"
+                    placeholder="contoh: 25.5"
+                    required>
+                <div class="form-text">Antara 10 - 60 menit (nilai yang realistis untuk 5K).</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="level" class="form-label">Level Pelari</label>
+                <select class="form-select" id="level" name="level" required>
+                    <option value="" disabled {{ 'selected' if not level_input else '' }}>-- Pilih level --</option>
+                    <option value="pemula" {{ 'selected' if level_input == 'pemula' else '' }}>Pemula</option>
+                    <option value="menengah" {{ 'selected' if level_input == 'menengah' else '' }}>Menengah</option>
+                    <option value="lanjutan" {{ 'selected' if level_input == 'lanjutan' else '' }}>Lanjutan</option>
+                </select>
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Buat Jadwal</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if jadwal_hasil %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">
+            Jadwal Latihan Anda
+            <span class="badge bg-secondary fw-normal">VDOT ≈ {{ "%.2f"|format(vdot) }}</span>
+        </h5>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Hari</th>
+                        <th>Jenis Latihan</th>
+                        <th>Jarak Target (km)</th>
+                        <th>Pace Target (menit/km)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for baris in jadwal_hasil %}
+                    <tr>
+                        <td>{{ baris.hari }}</td>
+                        <td>
+                            {% if baris.jenis == 'Rest' %}
+                                <span class="text-muted">Rest (Istirahat)</span>
+                            {% else %}
+                                {{ baris.jenis }}
+                            {% endif %}
+                        </td>
+                        <td>{{ baris.jarak_km }}</td>
+                        <td>{{ baris.pace }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if prediksi_race %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">Prediksi Waktu Race (Riegel Formula)</h5>
+        <p class="text-muted small">
+            Estimasi waktu tempuh di jarak lain berdasarkan PR 5K Anda saat ini.
+        </p>
+        <div class="row text-center">
+            {% for nama_jarak, waktu in prediksi_race.items() %}
+            <div class="col-md-4 mb-3">
+                <div class="border rounded p-3">
+                    <div class="text-muted small">{{ nama_jarak }}</div>
+                    <div class="fs-4 fw-bold">{{ waktu }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

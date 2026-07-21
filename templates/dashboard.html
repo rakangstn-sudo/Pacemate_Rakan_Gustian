@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Dashboard Admin</h2>
+<p class="text-muted">Halaman ini hanya bisa diakses setelah login (dilindungi oleh @login_required).</p>
+
+<div class="alert alert-secondary">
+    Halo, <strong>{{ username }}</strong>! Ini adalah placeholder dashboard.
+    Fitur pengelolaan data pelari & sesi latihan akan ditambahkan pada tahap berikutnya.
+</div>
+{% endblock %}

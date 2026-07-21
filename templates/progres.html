@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Progres Pelari{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Progres Pelari</h2>
+<p class="text-muted">Rekap sesi latihan seluruh pelari, dikelompokkan per orang.</p>
+
+{% if data_progres %}
+    <div class="row g-4">
+        {% for item in data_progres %}
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="card-title mb-0">{{ item.pelari.nama }}</h5>
+                            <span class="text-muted small">
+                                {{ item.pelari.usia }} tahun &middot; Level {{ item.pelari.level }}
+                            </span>
+                        </div>
+                        <span class="badge bg-primary">
+                            {{ "%.1f"|format(item.total_km_minggu) }} km / minggu ini
+                        </span>
+                    </div>
+
+                    <h6 class="mt-3 small text-uppercase text-muted">Sesi Terbaru</h6>
+                    {% if item.sesi_terbaru %}
+                    <ul class="list-group list-group-flush">
+                        {% for s in item.sesi_terbaru %}
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span>
+                                {{ s.tanggal }} &middot; {{ s.jenis_latihan }} &middot; {{ s.jarak_km }} km
+                            </span>
+                            <span class="text-muted">{{ format_pace(s.pace_hasil) }} /km</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted small mb-0">Belum ada sesi latihan tercatat.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-secondary">Belum ada data pelari.</div>
+{% endif %}
+{% endblock %}
