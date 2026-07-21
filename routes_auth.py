@@ -19,8 +19,8 @@ def register_routes(app):
             db = database.get_db()
             
             # Validasi duplikat username (admin/pelari)
-            existing_pelari = db.execute("SELECT id FROM pelari WHERE username = ?", (username,)).fetchone()
-            existing_admin = db.execute("SELECT id FROM admin WHERE username = ?", (username,)).fetchone()
+            existing_pelari = db.execute("SELECT id FROM pelari WHERE username = %s", (username,)).fetchone()
+            existing_admin = db.execute("SELECT id FROM admin WHERE username = %s", (username,)).fetchone()
             
             if existing_pelari or existing_admin:
                 flash("Username sudah digunakan, silakan pilih yang lain.", "danger")
@@ -29,7 +29,7 @@ def register_routes(app):
             password_hash = generate_password_hash(password)
             db.execute(
                 """INSERT INTO pelari (username, password_hash, nama, usia, level, pr_5k_menit) 
-                   VALUES (?, ?, ?, ?, ?, ?)""",
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
                 (username, password_hash, nama, int(usia) if usia else 25, level, float(pr_5k) if pr_5k else 0.0)
             )
             db.commit()
@@ -49,7 +49,7 @@ def register_routes(app):
 
             if role == "admin":
                 # Cek Admin
-                admin_user = db.execute("SELECT * FROM admin WHERE username = ?", (username,)).fetchone()
+                admin_user = db.execute("SELECT * FROM admin WHERE username = %s", (username,)).fetchone()
                 if admin_user and check_password_hash(admin_user["password_hash"], password):
                     session.clear()
                     session["admin_id"] = admin_user["id"]
@@ -58,7 +58,7 @@ def register_routes(app):
                 flash("Username atau password admin salah.", "danger")
             else:
                 # Cek Pelari
-                pelari = db.execute("SELECT * FROM pelari WHERE username = ?", (username,)).fetchone()
+                pelari = db.execute("SELECT * FROM pelari WHERE username = %s", (username,)).fetchone()
                 if pelari and check_password_hash(pelari["password_hash"], password):
                     session.clear()
                     session["pelari_id"] = pelari["id"]

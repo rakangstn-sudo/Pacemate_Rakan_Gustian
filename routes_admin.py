@@ -13,36 +13,45 @@ def register_routes(app):
         # --- Kartu ringkasan ---
         total_pelari = db.execute("SELECT COUNT(*) AS c FROM pelari").fetchone()["c"]
         total_sesi = db.execute("SELECT COUNT(*) AS c FROM sesi_latihan").fetchone()["c"]
+
+        # SQLite: date('now', '-6 days') -> Postgres: CURRENT_DATE - INTERVAL '6 days'
         total_km_minggu = db.execute(
             """SELECT COALESCE(SUM(jarak_km), 0) AS total
                FROM sesi_latihan
-               WHERE tanggal >= date('now', '-6 days')"""
+               WHERE tanggal >= CURRENT_DATE - INTERVAL '6 days'"""
         ).fetchone()["total"]
 
         # --- Data grafik: rata-rata pace 4 minggu terakhir ---
+        # SQLite: strftime('%Y-W%W', tanggal) -> Postgres: to_char(tanggal, 'IYYY-"W"IW')
+        # to_char menggunakan IYYY (ISO year) dan IW (ISO week number) agar
+        # penomoran minggu konsisten dengan standar ISO 8601.
+        # SQLite: date('now', '-27 days') -> Postgres: CURRENT_DATE - INTERVAL '27 days'
         rows = db.execute(
-            """SELECT strftime('%Y-W%W', tanggal) AS minggu_label,
+            """SELECT to_char(tanggal, 'IYYY-"W"IW') AS minggu_label,
                       AVG(pace_hasil) AS avg_pace
                FROM sesi_latihan
-               WHERE tanggal >= date('now', '-27 days')
+               WHERE tanggal >= CURRENT_DATE - INTERVAL '27 days'
                GROUP BY minggu_label
                ORDER BY minggu_label"""
         ).fetchall()
 
         chart_labels = [r["minggu_label"] for r in rows]
-        chart_values = [round(r["avg_pace"], 2) for r in rows]
+        chart_values = [round(float(r["avg_pace"]), 2) for r in rows]
 
         # --- Hitung pelari berisiko lonjakan volume ---
         TARGET_MINGGUAN = {"pemula": 14, "menengah": 26, "lanjutan": 40}
         daftar_pelari_all = db.execute("SELECT id, level FROM pelari").fetchall()
         jumlah_berisiko = 0
         for p in daftar_pelari_all:
+            # SQLite: date('now', '-6 days') -> Postgres: CURRENT_DATE - INTERVAL '6 days'
             km_minggu_ini = db.execute(
-                "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = ? AND tanggal >= date('now', '-6 days')",
+                "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = %s AND tanggal >= CURRENT_DATE - INTERVAL '6 days'",
                 (p["id"],)
             ).fetchone()["total"]
+            # SQLite: date('now', '-34 days') & date('now', '-6 days')
+            # -> Postgres: CURRENT_DATE - INTERVAL '34 days' & CURRENT_DATE - INTERVAL '6 days'
             km_4minggu = db.execute(
-                "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = ? AND tanggal >= date('now', '-34 days') AND tanggal < date('now', '-6 days')",
+                "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = %s AND tanggal >= CURRENT_DATE - INTERVAL '34 days' AND tanggal < CURRENT_DATE - INTERVAL '6 days'",
                 (p["id"],)
             ).fetchone()["total"]
             rata2 = km_4minggu / 4
@@ -70,12 +79,15 @@ def register_routes(app):
         
         data_risiko = []
         for p in daftar_pelari:
+            # SQLite: date('now', '-6 days') -> Postgres: CURRENT_DATE - INTERVAL '6 days'
             total_km_minggu_ini = db.execute(
-                "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = ? AND tanggal >= date('now', '-6 days')", (p["id"],)
+                "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = %s AND tanggal >= CURRENT_DATE - INTERVAL '6 days'", (p["id"],)
             ).fetchone()["total"]
             
+            # SQLite: date('now', '-34 days') & date('now', '-6 days')
+            # -> Postgres: CURRENT_DATE - INTERVAL '34 days' & CURRENT_DATE - INTERVAL '6 days'
             total_km_4minggu = db.execute(
-                "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = ? AND tanggal >= date('now', '-34 days') AND tanggal < date('now', '-6 days')", (p["id"],)
+                "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = %s AND tanggal >= CURRENT_DATE - INTERVAL '34 days' AND tanggal < CURRENT_DATE - INTERVAL '6 days'", (p["id"],)
             ).fetchone()["total"]
             
             rata2_km_4minggu = total_km_4minggu / 4
@@ -107,7 +119,7 @@ def register_routes(app):
             return redirect(url_for("admin_risiko"))
             
         db = database.get_db()
-        db.execute("UPDATE pelari SET peringatan_admin = ? WHERE id = ?", (pesan, pelari_id))
+        db.execute("UPDATE pelari SET peringatan_admin = %s WHERE id = %s", (pesan, pelari_id))
         db.commit()
         flash("Peringatan berhasil dikirim ke pelari.", "success")
         return redirect(url_for("admin_risiko"))
@@ -157,7 +169,7 @@ def register_routes(app):
                     
             db = database.get_db()
             if error is None:
-                existing = db.execute("SELECT id FROM pelari WHERE username = ?", (username,)).fetchone()
+                existing = db.execute("SELECT id FROM pelari WHERE username = %s", (username,)).fetchone()
                 if existing:
                     error = "Username sudah digunakan."
 
@@ -166,7 +178,7 @@ def register_routes(app):
             else:
                 password_hash = generate_password_hash(password)
                 db.execute(
-                    "INSERT INTO pelari (username, password_hash, nama, usia, level, pr_5k_menit) VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO pelari (username, password_hash, nama, usia, level, pr_5k_menit) VALUES (%s, %s, %s, %s, %s, %s)",
                     (username, password_hash, nama, usia, level, pr_5k),
                 )
                 db.commit()
@@ -179,7 +191,7 @@ def register_routes(app):
     @admin_required
     def admin_pelari_edit(pelari_id):
         db = database.get_db()
-        pelari = db.execute("SELECT * FROM pelari WHERE id = ?", (pelari_id,)).fetchone()
+        pelari = db.execute("SELECT * FROM pelari WHERE id = %s", (pelari_id,)).fetchone()
 
         if pelari is None:
             flash("Data pelari tidak ditemukan.", "danger")
@@ -219,7 +231,7 @@ def register_routes(app):
                     error = "PR 5K harus berupa angka."
                     
             if error is None:
-                existing = db.execute("SELECT id FROM pelari WHERE username = ? AND id != ?", (username, pelari_id)).fetchone()
+                existing = db.execute("SELECT id FROM pelari WHERE username = %s AND id != %s", (username, pelari_id)).fetchone()
                 if existing:
                     error = "Username sudah digunakan oleh pengguna lain."
 
@@ -229,12 +241,12 @@ def register_routes(app):
                 if password:
                     password_hash = generate_password_hash(password)
                     db.execute(
-                        "UPDATE pelari SET username = ?, password_hash = ?, nama = ?, usia = ?, level = ?, pr_5k_menit = ? WHERE id = ?",
+                        "UPDATE pelari SET username = %s, password_hash = %s, nama = %s, usia = %s, level = %s, pr_5k_menit = %s WHERE id = %s",
                         (username, password_hash, nama, usia, level, pr_5k, pelari_id),
                     )
                 else:
                     db.execute(
-                        "UPDATE pelari SET username = ?, nama = ?, usia = ?, level = ?, pr_5k_menit = ? WHERE id = ?",
+                        "UPDATE pelari SET username = %s, nama = %s, usia = %s, level = %s, pr_5k_menit = %s WHERE id = %s",
                         (username, nama, usia, level, pr_5k, pelari_id),
                     )
                 db.commit()
@@ -247,12 +259,12 @@ def register_routes(app):
     @admin_required
     def admin_pelari_hapus(pelari_id):
         db = database.get_db()
-        pelari = db.execute("SELECT nama FROM pelari WHERE id = ?", (pelari_id,)).fetchone()
+        pelari = db.execute("SELECT nama FROM pelari WHERE id = %s", (pelari_id,)).fetchone()
 
         if pelari is None:
             flash("Data pelari tidak ditemukan.", "danger")
         else:
-            db.execute("DELETE FROM pelari WHERE id = ?", (pelari_id,))
+            db.execute("DELETE FROM pelari WHERE id = %s", (pelari_id,))
             db.commit()
             flash(f"Pelari '{pelari['nama']}' beserta seluruh sesi latihannya berhasil dihapus.", "success")
 
@@ -313,7 +325,7 @@ def register_routes(app):
                 db.execute(
                     """INSERT INTO sesi_latihan
                        (pelari_id, tanggal, jarak_km, waktu_menit, jenis_latihan, pace_hasil)
-                       VALUES (?, ?, ?, ?, ?, ?)""",
+                       VALUES (%s, %s, %s, %s, %s, %s)""",
                     (pelari_id, tanggal, jarak_km, waktu_menit, jenis_latihan, pace_hasil),
                 )
                 db.commit()
@@ -328,7 +340,7 @@ def register_routes(app):
     def admin_sesi_edit(sesi_id):
         db = database.get_db()
         from utils import JENIS_LATIHAN_VALID
-        sesi = db.execute("SELECT * FROM sesi_latihan WHERE id = ?", (sesi_id,)).fetchone()
+        sesi = db.execute("SELECT * FROM sesi_latihan WHERE id = %s", (sesi_id,)).fetchone()
 
         if sesi is None:
             flash("Data sesi latihan tidak ditemukan.", "danger")
@@ -365,9 +377,9 @@ def register_routes(app):
                 pace_hasil = waktu_menit / jarak_km
                 db.execute(
                     """UPDATE sesi_latihan
-                       SET pelari_id=?, tanggal=?, jarak_km=?,
-                           waktu_menit=?, jenis_latihan=?, pace_hasil=?
-                       WHERE id=?""",
+                       SET pelari_id=%s, tanggal=%s, jarak_km=%s,
+                           waktu_menit=%s, jenis_latihan=%s, pace_hasil=%s
+                       WHERE id=%s""",
                     (pelari_id, tanggal, jarak_km, waktu_menit, jenis_latihan, pace_hasil, sesi_id),
                 )
                 db.commit()
@@ -381,14 +393,13 @@ def register_routes(app):
     @admin_required
     def admin_sesi_hapus(sesi_id):
         db = database.get_db()
-        sesi = db.execute("SELECT id FROM sesi_latihan WHERE id = ?", (sesi_id,)).fetchone()
+        sesi = db.execute("SELECT id FROM sesi_latihan WHERE id = %s", (sesi_id,)).fetchone()
 
         if sesi is None:
             flash("Data sesi latihan tidak ditemukan.", "danger")
         else:
-            db.execute("DELETE FROM sesi_latihan WHERE id = ?", (sesi_id,))
+            db.execute("DELETE FROM sesi_latihan WHERE id = %s", (sesi_id,))
             db.commit()
             flash("Sesi latihan berhasil dihapus.", "success")
-
 
         return redirect(url_for("admin_sesi_list"))

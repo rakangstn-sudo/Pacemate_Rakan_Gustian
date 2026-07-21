@@ -27,6 +27,12 @@
 #
 # 6. init_db() dihapus: Skema sekarang dikelola lewat Supabase SQL Editor
 #    (file schema_postgres.sql), bukan lewat kode Python.
+#
+# 7. DbWrapper: psycopg2 connection TIDAK punya method .execute() langsung
+#    (beda dengan sqlite3). Kita membuat class DbWrapper agar pola pemanggilan
+#    di routes (db.execute(...).fetchone()) tetap sama persis seperti versi
+#    SQLite, sehingga migrasi lebih mudah dan kode routes tidak perlu
+#    diubah strukturnya secara drastis.
 
 import os
 import psycopg2
@@ -44,29 +50,53 @@ load_dotenv()
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
+class DbWrapper:
+    """
+    Wrapper tipis di atas psycopg2 connection agar bisa dipanggil dengan pola
+    yang sama persis seperti sqlite3:
+        db = get_db()
+        row = db.execute("SELECT ...", (param,)).fetchone()
+        db.commit()
+
+    Tanpa wrapper ini, psycopg2 mengharuskan membuat cursor terpisah:
+        cur = conn.cursor()
+        cur.execute("SELECT ...", (param,))
+        row = cur.fetchone()
+
+    Wrapper ini menyederhanakan migrasi karena semua kode di routes_*.py
+    tidak perlu diubah strukturnya.
+    """
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, query, params=None):
+        """Buat cursor RealDictCursor, jalankan query, return cursor-nya."""
+        cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(query, params)
+        return cur
+
+    def commit(self):
+        """Commit transaksi saat ini."""
+        self._conn.commit()
+
+    def close(self):
+        """Tutup koneksi."""
+        self._conn.close()
+
+
 def get_db():
     """
     Mengambil koneksi database untuk request saat ini.
     Jika belum ada koneksi di objek 'g', buat koneksi baru.
 
-    cursor_factory diset ke RealDictCursor agar hasil query dikembalikan
-    sebagai dict Python biasa — sehingga row["nama"], row["level"], dll.
-    tetap berfungsi persis seperti saat pakai sqlite3.Row.
+    Mengembalikan DbWrapper (bukan raw connection) agar pola
+    db.execute(...).fetchone() tetap berfungsi seperti versi SQLite.
     """
     if "db" not in g:
-        g.db = psycopg2.connect(DATABASE_URL)
-        # Autocommit=False (default) — kita perlu panggil db.commit() manual,
-        # sama seperti perilaku SQLite sebelumnya.
+        conn = psycopg2.connect(DATABASE_URL)
+        g.db = DbWrapper(conn)
     return g.db
-
-
-def get_cursor():
-    """
-    Helper untuk mendapatkan cursor dengan RealDictCursor.
-    Dipanggil dari routes untuk menjalankan query.
-    """
-    db = get_db()
-    return db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
 
 def close_db(e=None):

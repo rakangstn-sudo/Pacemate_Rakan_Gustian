@@ -22,7 +22,7 @@ def inject_user():
     current_pelari = None
     if session.get("pelari_id"):
         db = database.get_db()
-        current_pelari = db.execute("SELECT * FROM pelari WHERE id = ?", (session["pelari_id"],)).fetchone()
+        current_pelari = db.execute("SELECT * FROM pelari WHERE id = %s", (session["pelari_id"],)).fetchone()
     return dict(current_pelari=current_pelari)
 
 # Registrasi seluruh route dari modul-modul

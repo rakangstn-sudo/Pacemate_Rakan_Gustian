@@ -13,7 +13,7 @@ def register_routes(app):
     def jadwal():
         db = database.get_db()
         pelari_id = session.get("pelari_id")
-        pelari = db.execute("SELECT pr_5k_menit, level FROM pelari WHERE id = ?", (pelari_id,)).fetchone()
+        pelari = db.execute("SELECT pr_5k_menit, level FROM pelari WHERE id = %s", (pelari_id,)).fetchone()
         
         if not pelari or not pelari["pr_5k_menit"]:
             flash("Mohon perbarui data waktu PR 5K Anda agar sistem bisa membuat jadwal.", "warning")
@@ -21,7 +21,7 @@ def register_routes(app):
 
         # --- FITUR PROGRESSION OTOMATIS ---
         # Hitung berapa banyak sesi yang sudah dilaporkan pelari ini
-        total_sesi = db.execute("SELECT COUNT(*) AS c FROM sesi_latihan WHERE pelari_id = ?", (pelari_id,)).fetchone()["c"]
+        total_sesi = db.execute("SELECT COUNT(*) AS c FROM sesi_latihan WHERE pelari_id = %s", (pelari_id,)).fetchone()["c"]
         
         # Logika: Setiap kelipatan 4 sesi latihan, Kapasitas Aerobik (VDOT) pelari otomatis 
         # naik 0.5 poin, membuat target pace lebih cepat secara ilmiah.
@@ -80,7 +80,7 @@ def register_routes(app):
                 db.execute(
                     """INSERT INTO sesi_latihan
                        (pelari_id, tanggal, jarak_km, waktu_menit, jenis_latihan, pace_hasil)
-                       VALUES (?, ?, ?, ?, ?, ?)""",
+                       VALUES (%s, %s, %s, %s, %s, %s)""",
                     (pelari_id, tanggal, jarak_km, waktu_menit, jenis_latihan, pace_hasil),
                 )
                 db.commit()
@@ -95,19 +95,20 @@ def register_routes(app):
         db = database.get_db()
         pelari_id = session.get("pelari_id")
 
-        pelari = db.execute("SELECT * FROM pelari WHERE id = ?", (pelari_id,)).fetchone()
+        pelari = db.execute("SELECT * FROM pelari WHERE id = %s", (pelari_id,)).fetchone()
 
+        # SQLite: date('now', '-6 days') -> Postgres: CURRENT_DATE - INTERVAL '6 days'
         total_km_minggu = db.execute(
             """SELECT COALESCE(SUM(jarak_km), 0) AS total
                FROM sesi_latihan
-               WHERE pelari_id = ?
-                 AND tanggal >= date('now', '-6 days')""",
+               WHERE pelari_id = %s
+                 AND tanggal >= CURRENT_DATE - INTERVAL '6 days'""",
             (pelari_id,),
         ).fetchone()["total"]
 
         sesi_terbaru = db.execute(
             """SELECT * FROM sesi_latihan
-               WHERE pelari_id = ?
+               WHERE pelari_id = %s
                ORDER BY tanggal DESC, id DESC
                LIMIT 5""",
             (pelari_id,),
@@ -126,6 +127,6 @@ def register_routes(app):
     def hapus_peringatan():
         pelari_id = session.get("pelari_id")
         db = database.get_db()
-        db.execute("UPDATE pelari SET peringatan_admin = NULL WHERE id = ?", (pelari_id,))
+        db.execute("UPDATE pelari SET peringatan_admin = NULL WHERE id = %s", (pelari_id,))
         db.commit()
         return redirect(url_for("index"))
