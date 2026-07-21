@@ -32,26 +32,55 @@
             <tbody>
                 {% for d in data_risiko %}
                 <tr>
-                    <td class="fw-bold">{{ d.nama }}</td>
+                    <td class="fw-bold">{{ d.nama }} <span class="badge bg-secondary ms-1">{{ d.level|title }}</span></td>
                     <td>{{ "%.1f"|format(d.total_km_minggu_ini) }} km</td>
-                    <td>{{ "%.1f"|format(d.rata2_km_4minggu) }} km</td>
                     <td>
-                        {% if d.rasio %}
-                            {{ "%.2f"|format(d.rasio) }}x
+                        {% if d.rata2_km_4minggu > 0 %}
+                            {{ "%.1f"|format(d.rata2_km_4minggu) }} km
                         {% else %}
-                            <span class="text-muted">-</span>
+                            <span class="text-muted fst-italic">Data tidak cukup (Acuan maks: {{ d.baseline }} km)</span>
                         {% endif %}
+                    </td>
+                    <td>
+                        {{ "%.2f"|format(d.rasio) }}x
                     </td>
                     <td>
                         {% if d.berisiko %}
                             <span class="badge bg-danger">Risiko Lonjakan Volume</span>
-                        {% elif d.rata2_km_4minggu == 0 %}
-                            <span class="badge bg-secondary">Data Tidak Cukup</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2 mt-1" data-bs-toggle="modal" data-bs-target="#modalPeringatan{{ d.id }}">
+                                Beri Peringatan
+                            </button>
                         {% else %}
                             <span class="badge bg-success">Aman</span>
                         {% endif %}
                     </td>
                 </tr>
+
+                <!-- Modal Peringatan -->
+                {% if d.berisiko %}
+                <div class="modal fade" id="modalPeringatan{{ d.id }}" tabindex="-1" aria-labelledby="modalPeringatanLabel{{ d.id }}" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="modalPeringatanLabel{{ d.id }}">Beri Peringatan ke {{ d.nama }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <form method="POST" action="{{ url_for('admin_pelari_peringatkan', pelari_id=d.id) }}">
+                          <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="pesan" class="form-label">Pesan Peringatan</label>
+                                <textarea class="form-control" name="pesan" id="pesan" rows="3" required>Halo {{ d.nama }}, kami mendeteksi lonjakan volume latihan yang berisiko pada minggu ini. Harap beristirahat dengan cukup untuk menghindari cedera.</textarea>
+                            </div>
+                          </div>
+                          <div class="modal-header border-0 pt-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-danger">Kirim Peringatan</button>
+                          </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
                 {% endfor %}
             </tbody>
         </table>

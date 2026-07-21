@@ -19,6 +19,14 @@ database.init_app(app)
 # Jenis latihan yang valid, dipakai untuk validasi form /lapor dan CRUD sesi
 JENIS_LATIHAN_VALID = ["easy", "tempo", "interval", "long_run"]
 
+@app.context_processor
+def inject_user():
+    current_pelari = None
+    if session.get("pelari_id"):
+        db = database.get_db()
+        current_pelari = db.execute("SELECT * FROM pelari WHERE id = ?", (session["pelari_id"],)).fetchone()
+    return dict(current_pelari=current_pelari)
+
 
 # ---------------------------------------------------------------------------
 # DECORATOR: admin_required
@@ -200,37 +208,31 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if session.get("admin_id") is not None:
-        return redirect(url_for("admin_dashboard"))
-    if session.get("pelari_id") is not None:
-        return redirect(url_for("index"))
-
     if request.method == "POST":
+        role = request.form.get("role")
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
         db = database.get_db()
 
-        # 1. Cek tabel admin
-        admin = db.execute("SELECT * FROM admin WHERE username = ?", (username,)).fetchone()
-        if admin and check_password_hash(admin["password_hash"], password):
-            session.clear()
-            session["admin_id"] = admin["id"]
-            session["username"] = admin["username"]
-            flash(f"Selamat datang Admin {admin['username']}!", "success")
-            return redirect(url_for("admin_dashboard"))
-
-        # 2. Cek tabel pelari
-        pelari = db.execute("SELECT * FROM pelari WHERE username = ?", (username,)).fetchone()
-        if pelari and check_password_hash(pelari["password_hash"], password):
-            session.clear()
-            session["pelari_id"] = pelari["id"]
-            session["username"] = pelari["username"]
-            flash(f"Selamat datang {pelari['nama']}!", "success")
-            return redirect(url_for("index"))
-
-        flash("Username atau password salah.", "danger")
-        return redirect(url_for("login"))
+        if role == "admin":
+            # Cek Admin
+            admin_user = db.execute("SELECT * FROM admin WHERE username = ?", (username,)).fetchone()
+            if admin_user and check_password_hash(admin_user["password_hash"], password):
+                session.clear()
+                session["admin_id"] = admin_user["id"]
+                flash("Login admin berhasil.", "success")
+                return redirect(url_for("admin_dashboard"))
+            flash("Username atau password admin salah.", "danger")
+        else:
+            # Cek Pelari
+            pelari = db.execute("SELECT * FROM pelari WHERE username = ?", (username,)).fetchone()
+            if pelari and check_password_hash(pelari["password_hash"], password):
+                session.clear()
+                session["pelari_id"] = pelari["id"]
+                flash(f"Selamat datang kembali, {pelari['nama']}!", "success")
+                return redirect(url_for("index"))
+            flash("Username atau password pelari salah.", "danger")
 
     return render_template("login.html")
 
@@ -278,7 +280,8 @@ def admin_dashboard():
     chart_values = [round(r["avg_pace"], 2) for r in rows]
 
     # --- Hitung pelari berisiko lonjakan volume ---
-    daftar_pelari_all = db.execute("SELECT id FROM pelari").fetchall()
+    TARGET_MINGGUAN = {"pemula": 14, "menengah": 26, "lanjutan": 40}
+    daftar_pelari_all = db.execute("SELECT id, level FROM pelari").fetchall()
     jumlah_berisiko = 0
     for p in daftar_pelari_all:
         km_minggu_ini = db.execute(
@@ -290,7 +293,8 @@ def admin_dashboard():
             (p["id"],)
         ).fetchone()["total"]
         rata2 = km_4minggu / 4
-        if rata2 > 0 and (km_minggu_ini / rata2) > 1.3:
+        baseline = rata2 if rata2 > 0 else TARGET_MINGGUAN.get(p["level"], 14)
+        if (km_minggu_ini / baseline) > 1.3:
             jumlah_berisiko += 1
 
     return render_template(
@@ -313,7 +317,8 @@ def admin_dashboard():
 @admin_required
 def admin_risiko():
     db = database.get_db()
-    daftar_pelari = db.execute("SELECT id, nama FROM pelari ORDER BY nama").fetchall()
+    daftar_pelari = db.execute("SELECT id, nama, level FROM pelari ORDER BY nama").fetchall()
+    TARGET_MINGGUAN = {"pemula": 14, "menengah": 26, "lanjutan": 40}
     
     data_risiko = []
     for p in daftar_pelari:
@@ -328,18 +333,18 @@ def admin_risiko():
         ).fetchone()["total"]
         
         rata2_km_4minggu = total_km_4minggu / 4
-        rasio = None
-        berisiko = False
+        baseline = rata2_km_4minggu if rata2_km_4minggu > 0 else TARGET_MINGGUAN.get(p["level"], 14)
         
-        if rata2_km_4minggu > 0:
-            rasio = total_km_minggu_ini / rata2_km_4minggu
-            if rasio > 1.3:
-                berisiko = True
+        rasio = total_km_minggu_ini / baseline
+        berisiko = rasio > 1.3
                 
         data_risiko.append({
+            "id": p["id"],
             "nama": p["nama"],
+            "level": p["level"],
             "total_km_minggu_ini": total_km_minggu_ini,
             "rata2_km_4minggu": rata2_km_4minggu,
+            "baseline": baseline,
             "rasio": rasio,
             "berisiko": berisiko
         })
@@ -349,6 +354,29 @@ def admin_risiko():
     
     return render_template("admin_risiko.html", active_menu="risiko", data_risiko=data_risiko)
 
+
+@app.route("/admin/pelari/<int:pelari_id>/peringatkan", methods=["POST"])
+@admin_required
+def admin_pelari_peringatkan(pelari_id):
+    pesan = request.form.get("pesan", "").strip()
+    if not pesan:
+        flash("Pesan peringatan tidak boleh kosong.", "danger")
+        return redirect(url_for("admin_risiko"))
+        
+    db = database.get_db()
+    db.execute("UPDATE pelari SET peringatan_admin = ? WHERE id = ?", (pesan, pelari_id))
+    db.commit()
+    flash("Peringatan berhasil dikirim ke pelari.", "success")
+    return redirect(url_for("admin_risiko"))
+
+@app.route("/hapus_peringatan", methods=["POST"])
+@pelari_required
+def hapus_peringatan():
+    pelari_id = session.get("pelari_id")
+    db = database.get_db()
+    db.execute("UPDATE pelari SET peringatan_admin = NULL WHERE id = ?", (pelari_id,))
+    db.commit()
+    return redirect(url_for("index"))
 
 # ===========================================================================
 # ROUTE ADMIN: CRUD Pelari

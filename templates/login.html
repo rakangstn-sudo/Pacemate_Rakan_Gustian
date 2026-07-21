@@ -4,39 +4,54 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <h4 class="card-title text-center mb-4">Login PaceMate</h4>
-
-                <form method="POST" action="{{ url_for('login') }}">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="username"
-                            name="username"
-                            required
-                            autofocus>
+    <div class="col-md-10">
+        <div class="row g-4">
+            <!-- Login Pelari -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100 border-primary">
+                    <div class="card-body p-4">
+                        <h4 class="card-title text-center text-primary mb-4">Login Pelari</h4>
+                        <form method="POST" action="{{ url_for('login') }}">
+                            <input type="hidden" name="role" value="pelari">
+                            <div class="mb-3">
+                                <label for="username_pelari" class="form-label fw-bold">Username</label>
+                                <input type="text" class="form-control" id="username_pelari" name="username" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="password_pelari" class="form-label fw-bold">Password</label>
+                                <input type="password" class="form-control" id="password_pelari" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Login Pelari</button>
+                        </form>
+                        <div class="text-center mt-3">
+                            <small class="text-muted">Belum punya akun? <a href="{{ url_for('register') }}" class="text-decoration-none fw-bold">Daftar sekarang</a></small>
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input
-                            type="password"
-                            class="form-control"
-                            id="password"
-                            name="password"
-                            required>
+            <!-- Login Admin -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100 border-secondary">
+                    <div class="card-body p-4 bg-light">
+                        <h4 class="card-title text-center text-secondary mb-4">Login Admin</h4>
+                        <form method="POST" action="{{ url_for('login') }}">
+                            <input type="hidden" name="role" value="admin">
+                            <div class="mb-3">
+                                <label for="username_admin" class="form-label fw-bold">Username Admin</label>
+                                <input type="text" class="form-control" id="username_admin" name="username" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="password_admin" class="form-label fw-bold">Password Admin</label>
+                                <input type="password" class="form-control" id="password_admin" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-secondary w-100">Login Admin</button>
+                        </form>
+                        <div class="text-center mt-3">
+                            <small class="text-muted">Gunakan kredensial yang diberikan sistem.</small>
+                        </div>
                     </div>
-
-                    <button type="submit" class="btn btn-primary w-100">Login</button>
-                    
-                    <div class="mt-3 text-center small">
-                        Belum punya akun? <a href="{{ url_for('register') }}">Daftar sebagai pelari</a>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>

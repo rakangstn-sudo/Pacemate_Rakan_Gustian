@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS pelari (
     nama TEXT NOT NULL,
     usia INTEGER NOT NULL,
     level TEXT NOT NULL CHECK (level IN ('pemula', 'menengah', 'lanjutan')),
-    pr_5k_menit REAL  -- personal record lari 5K dalam satuan menit
+    pr_5k_menit REAL,  -- personal record lari 5K dalam satuan menit
+    peringatan_admin TEXT
 );
 
 -- Tabel sesi_latihan: mencatat setiap sesi latihan lari milik seorang pelari
