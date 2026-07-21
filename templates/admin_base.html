@@ -25,6 +25,10 @@
                        href="{{ url_for('admin_sesi_list') }}">
                         📝 Kelola Sesi
                     </a>
+                    <a class="nav-link {{ 'active fw-bold' if active_menu == 'risiko' else '' }}"
+                       href="{{ url_for('admin_risiko') }}">
+                        ⚠️ Deteksi Risiko
+                    </a>
                     <hr class="my-2">
                     <a class="nav-link text-danger" href="{{ url_for('logout') }}">
                         🔓 Logout

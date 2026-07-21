@@ -1,0 +1,63 @@
+<!--
+  admin_risiko.html
+  Halaman fitur inti: Deteksi Risiko Lonjakan Volume Latihan
+-->
+{% extends "admin_base.html" %}
+
+{% block title %}Deteksi Risiko Latihan{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h2>Deteksi Risiko Lonjakan Volume</h2>
+    <p class="text-muted">
+        Menganalisis total volume lari (km) setiap pelari minggu ini (7 hari terakhir) 
+        dibandingkan rata-rata beban 4 minggu sebelumnya. Jika terjadi peningkatan drastis 
+        (rasio > 1.3), pelari ditandai berisiko cedera/overtraining.
+    </p>
+</div>
+
+{% if data_risiko %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nama Pelari</th>
+                    <th>Volume Minggu Ini</th>
+                    <th>Rata-rata 4 Minggu Lalu</th>
+                    <th>Rasio Peningkatan</th>
+                    <th>Status Risiko</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in data_risiko %}
+                <tr>
+                    <td class="fw-bold">{{ d.nama }}</td>
+                    <td>{{ "%.1f"|format(d.total_km_minggu_ini) }} km</td>
+                    <td>{{ "%.1f"|format(d.rata2_km_4minggu) }} km</td>
+                    <td>
+                        {% if d.rasio %}
+                            {{ "%.2f"|format(d.rasio) }}x
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if d.berisiko %}
+                            <span class="badge bg-danger">Risiko Lonjakan Volume</span>
+                        {% elif d.rata2_km_4minggu == 0 %}
+                            <span class="badge bg-secondary">Data Tidak Cukup</span>
+                        {% else %}
+                            <span class="badge bg-success">Aman</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-secondary">Belum ada data pelari yang bisa dianalisis.</div>
+{% endif %}
+{% endblock %}

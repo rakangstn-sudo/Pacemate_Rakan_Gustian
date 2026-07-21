@@ -12,7 +12,7 @@
 
 <!-- ===== KARTU RINGKASAN ===== -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card shadow-sm text-center">
             <div class="card-body">
                 <div class="text-muted small text-uppercase">Total Pelari</div>
@@ -20,7 +20,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card shadow-sm text-center">
             <div class="card-body">
                 <div class="text-muted small text-uppercase">Total Sesi Latihan</div>
@@ -28,13 +28,25 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card shadow-sm text-center">
             <div class="card-body">
                 <div class="text-muted small text-uppercase">Total KM Minggu Ini</div>
                 <div class="fs-2 fw-bold text-info">{{ "%.1f"|format(total_km_minggu) }}</div>
             </div>
         </div>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('admin_risiko') }}" class="text-decoration-none">
+            <div class="card shadow-sm text-center h-100 {{ 'border-danger' if jumlah_berisiko > 0 else 'border-success' }}">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">Pelari Berisiko</div>
+                    <div class="fs-2 fw-bold {{ 'text-danger' if jumlah_berisiko > 0 else 'text-success' }}">
+                        {{ jumlah_berisiko }}
+                    </div>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 

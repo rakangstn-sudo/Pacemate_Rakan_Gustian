@@ -236,6 +236,22 @@ def admin_dashboard():
     chart_labels = [r["minggu_label"] for r in rows]
     chart_values = [round(r["avg_pace"], 2) for r in rows]
 
+    # --- Hitung pelari berisiko lonjakan volume ---
+    daftar_pelari_all = db.execute("SELECT id FROM pelari").fetchall()
+    jumlah_berisiko = 0
+    for p in daftar_pelari_all:
+        km_minggu_ini = db.execute(
+            "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = ? AND tanggal >= date('now', '-6 days')",
+            (p["id"],)
+        ).fetchone()["total"]
+        km_4minggu = db.execute(
+            "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = ? AND tanggal >= date('now', '-34 days') AND tanggal < date('now', '-6 days')",
+            (p["id"],)
+        ).fetchone()["total"]
+        rata2 = km_4minggu / 4
+        if rata2 > 0 and (km_minggu_ini / rata2) > 1.3:
+            jumlah_berisiko += 1
+
     return render_template(
         "admin_dashboard.html",
         active_menu="dashboard",
@@ -244,7 +260,53 @@ def admin_dashboard():
         total_km_minggu=total_km_minggu,
         chart_labels=chart_labels,
         chart_values=chart_values,
+        jumlah_berisiko=jumlah_berisiko,
     )
+
+
+# ===========================================================================
+# ROUTE ADMIN: Deteksi Risiko
+# ===========================================================================
+
+@app.route("/admin/risiko")
+@login_required
+def admin_risiko():
+    db = database.get_db()
+    daftar_pelari = db.execute("SELECT id, nama FROM pelari ORDER BY nama").fetchall()
+    
+    data_risiko = []
+    for p in daftar_pelari:
+        # total_km_minggu_ini = 7 hari terakhir (hari ini - 6 hari)
+        total_km_minggu_ini = db.execute(
+            "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = ? AND tanggal >= date('now', '-6 days')", (p["id"],)
+        ).fetchone()["total"]
+        
+        # total 4 minggu sebelumnya = 28 hari (dari -34 hari s.d. -7 hari)
+        total_km_4minggu = db.execute(
+            "SELECT COALESCE(SUM(jarak_km), 0) AS total FROM sesi_latihan WHERE pelari_id = ? AND tanggal >= date('now', '-34 days') AND tanggal < date('now', '-6 days')", (p["id"],)
+        ).fetchone()["total"]
+        
+        rata2_km_4minggu = total_km_4minggu / 4
+        rasio = None
+        berisiko = False
+        
+        if rata2_km_4minggu > 0:
+            rasio = total_km_minggu_ini / rata2_km_4minggu
+            if rasio > 1.3:
+                berisiko = True
+                
+        data_risiko.append({
+            "nama": p["nama"],
+            "total_km_minggu_ini": total_km_minggu_ini,
+            "rata2_km_4minggu": rata2_km_4minggu,
+            "rasio": rasio,
+            "berisiko": berisiko
+        })
+        
+    # Urutkan agar yang berisiko tampil di atas
+    data_risiko.sort(key=lambda x: (not x["berisiko"], x["nama"]))
+    
+    return render_template("admin_risiko.html", active_menu="risiko", data_risiko=data_risiko)
 
 
 # ===========================================================================
