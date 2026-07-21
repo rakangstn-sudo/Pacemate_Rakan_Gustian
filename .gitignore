@@ -10,3 +10,4 @@ __pycache__/
 
 # Folder nested (salinan lama, tidak diperlukan)
 pacemate/
+.env
