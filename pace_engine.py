@@ -136,7 +136,7 @@ def format_pace(menit_desimal):
     return f"{menit}:{detik:02d}"
 
 
-def generate_jadwal(pr_menit, level):
+def generate_jadwal(pr_menit, level, bonus_vdot=0.0):
     """
     Menggabungkan seluruh komponen (VDOT, pola latihan, jarak target, pace
     per zona) menjadi jadwal latihan 7 hari (Senin-Minggu).
@@ -145,7 +145,8 @@ def generate_jadwal(pr_menit, level):
         {"hari": ..., "jenis": ..., "jarak_km": ..., "pace": "menit:detik"}
     Untuk hari "Rest", jarak_km dan pace ditampilkan "-".
     """
-    vdot = hitung_vdot(pr_menit)
+    vdot_awal = hitung_vdot(pr_menit)
+    vdot = vdot_awal + bonus_vdot
     pola = POLA_LATIHAN[level]
     jarak = JARAK_TARGET[level]
 
