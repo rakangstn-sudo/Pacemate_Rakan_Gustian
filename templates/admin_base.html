@@ -1,40 +1,36 @@
 <!--
-  admin_base.html
-  Layout khusus halaman admin: sidebar navigasi + area konten.
-  Semua template admin meng-extends template ini (bukan langsung base.html).
+  admin_base.html — Strava-style admin layout with sidebar
 -->
 {% extends "base.html" %}
 
 {% block content %}
 <div class="row g-4">
-    <!-- ===== SIDEBAR ADMIN ===== -->
-    <div class="col-md-3 col-lg-2">
-        <div class="card shadow-sm">
-            <div class="card-body p-2">
-                <h6 class="text-uppercase text-muted small px-2 pt-1 mb-2">Menu Admin</h6>
-                <nav class="nav flex-column">
-                    <a class="nav-link {{ 'active fw-bold' if active_menu == 'dashboard' else '' }}"
-                       href="{{ url_for('admin_dashboard') }}">
-                        📊 Dashboard
-                    </a>
-                    <a class="nav-link {{ 'active fw-bold' if active_menu == 'pelari' else '' }}"
-                       href="{{ url_for('admin_pelari_list') }}">
-                        🏃 Kelola Pelari
-                    </a>
-                    <a class="nav-link {{ 'active fw-bold' if active_menu == 'sesi' else '' }}"
-                       href="{{ url_for('admin_sesi_list') }}">
-                        📝 Kelola Sesi
-                    </a>
-                    <a class="nav-link {{ 'active fw-bold' if active_menu == 'risiko' else '' }}"
-                       href="{{ url_for('admin_risiko') }}">
-                        ⚠️ Deteksi Risiko
-                    </a>
-                    <hr class="my-2">
-                    <a class="nav-link text-danger" href="{{ url_for('logout') }}">
-                        🔓 Logout
-                    </a>
-                </nav>
-            </div>
+    <!-- ===== SIDEBAR ===== -->
+    <div class="col-md-3 col-lg-2 admin-sidebar">
+        <div class="card p-2">
+            <div class="sidebar-label">Menu Admin</div>
+            <nav class="nav flex-column">
+                <a class="nav-link {{ 'active' if active_menu == 'dashboard' else '' }}"
+                   href="{{ url_for('admin_dashboard') }}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a class="nav-link {{ 'active' if active_menu == 'pelari' else '' }}"
+                   href="{{ url_for('admin_pelari_list') }}">
+                    <i class="bi bi-people-fill"></i> Kelola Pelari
+                </a>
+                <a class="nav-link {{ 'active' if active_menu == 'sesi' else '' }}"
+                   href="{{ url_for('admin_sesi_list') }}">
+                    <i class="bi bi-journal-text"></i> Kelola Sesi
+                </a>
+                <a class="nav-link {{ 'active' if active_menu == 'risiko' else '' }}"
+                   href="{{ url_for('admin_risiko') }}">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Deteksi Risiko
+                </a>
+                <hr class="my-2">
+                <a class="nav-link text-danger" href="{{ url_for('logout') }}">
+                    <i class="bi bi-box-arrow-left"></i> Logout
+                </a>
+            </nav>
         </div>
     </div>
 

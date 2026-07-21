@@ -3,49 +3,84 @@
 {% block title %}Beranda{% endblock %}
 
 {% block content %}
+<!-- ===== HERO ===== -->
 <div class="row align-items-center g-5 py-4">
-    <div class="col-lg-7">
-        <h1 class="fw-bold mb-3">Selamat Datang di PaceMate</h1>
-        <p class="lead">
-            PaceMate adalah Sistem Informasi Pengatur Pace Lari yang membantu
-            pelari — terutama pemula — menyusun jadwal latihan mingguan dengan
-            <strong>pace (kecepatan) yang tepat sesuai kemampuan mereka</strong>.
+    <div class="col-lg-6">
+        <div class="hero-badge">
+            <i class="bi bi-lightning-fill"></i> Powered by VDOT Daniels-Gilbert
+        </div>
+        <h1 class="hero-title mb-3">
+            Latih Lebih<br><span>Cerdas.</span><br>Lari Lebih Jauh.
+        </h1>
+        <p class="text-muted" style="font-size:1.05rem; line-height:1.7;">
+            PaceMate membantu Anda berlari dengan <strong>pace yang tepat</strong> — bukan terlalu pelan, bukan terlalu kencang. Jadwal mingguan dipersonalisasi sesuai kemampuan aerobik nyata Anda.
         </p>
-
-        <h5 class="mt-4">Masalah yang Diselesaikan</h5>
-        <p>
-            Banyak pelari pemula berlatih tanpa arahan pace yang jelas —
-            berlari terlalu cepat saat sesi easy, atau tidak cukup intens saat
-            sesi tempo/interval. Pola latihan yang tidak terukur seperti ini
-            meningkatkan risiko <strong>cedera</strong> dan <strong>burnout</strong>,
-            karena tubuh tidak diberi kombinasi beban dan pemulihan yang wajar.
-        </p>
-
-        <h5 class="mt-4">Bagaimana PaceMate Membantu</h5>
-        <ul>
-            <li>Menghitung <strong>VDOT</strong> (estimasi kapasitas aerobik) dari waktu PR lari 5K, menggunakan formula Daniels-Gilbert.</li>
-            <li>Menyusun <strong>jadwal latihan 7 hari</strong> lengkap dengan jenis latihan, jarak, dan target pace per sesi.</li>
-            <li>Mencatat <strong>sesi latihan aktual</strong> dan menghitung pace hasil secara otomatis.</li>
-            <li>Menampilkan <strong>progres mingguan</strong> setiap pelari secara terbuka.</li>
-        </ul>
-
-        <div class="mt-4 d-flex gap-2">
-            <a href="{{ url_for('jadwal') }}" class="btn btn-primary">Buat Jadwal Latihan Saya</a>
-            <a href="{{ url_for('progres') }}" class="btn btn-outline-secondary">Lihat Progres Pelari</a>
+        <div class="d-flex flex-wrap gap-3 mt-4">
+            {% if session.get('pelari_id') %}
+                <a href="{{ url_for('jadwal') }}" class="btn btn-primary px-4">
+                    <i class="bi bi-calendar3 me-2"></i>Lihat Jadwal Saya
+                </a>
+                <a href="{{ url_for('lapor') }}" class="btn btn-outline-primary px-4">
+                    <i class="bi bi-plus-circle me-2"></i>Lapor Sesi
+                </a>
+            {% else %}
+                <a href="{{ url_for('register') }}" class="btn btn-primary px-4">
+                    <i class="bi bi-person-plus me-2"></i>Daftar Gratis
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary px-4">
+                    Masuk
+                </a>
+            {% endif %}
         </div>
     </div>
 
-    <div class="col-lg-5">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h6 class="card-title text-uppercase text-muted small">Alur Singkat</h6>
-                <ol class="mb-0 ps-3">
-                    <li class="mb-2">Masukkan waktu PR 5K &amp; level lari Anda.</li>
-                    <li class="mb-2">Dapatkan jadwal latihan 7 hari dengan pace yang dipersonalisasi.</li>
-                    <li class="mb-2">Jalani latihan, lalu laporkan hasilnya lewat form "Lapor Sesi Latihan".</li>
-                    <li>Pantau progres mingguan Anda di halaman "Progres".</li>
-                </ol>
+    <div class="col-lg-6">
+        <div class="card p-0 overflow-hidden" style="border-radius:16px;">
+            <!-- Stats bar -->
+            <div style="background: var(--strava-orange); padding: 1rem 1.5rem;">
+                <span style="color:rgba(255,255,255,0.85); font-size:0.75rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Cara Kerja PaceMate</span>
             </div>
+            <div class="card-body p-0">
+                {% set steps = [
+                    ('1', 'bi-person-badge', 'Daftar & Isi Profil', 'Masukkan PR 5K dan level lari Anda (Pemula / Menengah / Lanjutan).'),
+                    ('2', 'bi-calendar3', 'Dapatkan Jadwal 7 Hari', 'Sistem menghitung VDOT dan menyusun jadwal dengan target pace per sesi.'),
+                    ('3', 'bi-pencil-square', 'Lapor Sesi Latihan', 'Catat setiap sesi yang sudah dijalani; pace hasil dihitung otomatis.'),
+                    ('4', 'bi-bar-chart-line', 'Pantau Progres', 'Admin memantau data dan memberi peringatan jika volume terlalu tinggi.')
+                ] %}
+                {% for num, icon, title, desc in steps %}
+                <div class="d-flex align-items-start gap-3 p-4 {% if not loop.last %}border-bottom{% endif %}">
+                    <div style="width:36px; height:36px; background:var(--strava-orange-light); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i class="bi {{ icon }}" style="color:var(--strava-orange); font-size:1.1rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700; font-size:0.9rem; color:var(--strava-black);">{{ title }}</div>
+                        <div style="font-size:0.82rem; color:var(--strava-mid-gray); margin-top:2px;">{{ desc }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== STAT STRIP ===== -->
+<div class="row g-3 mt-2">
+    <div class="col-4">
+        <div class="stat-card orange">
+            <div class="stat-value">VDOT</div>
+            <div class="stat-label">Formula Daniels</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="stat-card dark">
+            <div class="stat-value">7</div>
+            <div class="stat-label">Hari Jadwal</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="stat-card white">
+            <div class="stat-value" style="color:var(--strava-orange);">≤130%</div>
+            <div class="stat-label">Batas Volume Aman</div>
         </div>
     </div>
 </div>

@@ -1,52 +1,66 @@
-<!--
-  admin_pelari.html
-  Halaman daftar pelari (CRUD: list + hapus).
-  Tombol Tambah dan Edit mengarah ke form terpisah (admin_pelari_form.html).
--->
 {% extends "admin_base.html" %}
 
 {% block title %}Kelola Pelari{% endblock %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Kelola Pelari</h2>
-    <a href="{{ url_for('admin_pelari_tambah') }}" class="btn btn-primary">+ Tambah Pelari</a>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <div class="section-label"><i class="bi bi-people-fill me-1"></i>Manajemen</div>
+        <h2 class="fw-800 mb-0" style="letter-spacing:-0.5px;">Kelola Pelari</h2>
+    </div>
+    <a href="{{ url_for('admin_pelari_tambah') }}" class="btn btn-primary">
+        <i class="bi bi-person-plus me-2"></i>Tambah Pelari
+    </a>
 </div>
 
 {% if daftar_pelari %}
-<div class="card shadow-sm">
+<div class="card">
     <div class="table-responsive">
-        <table class="table table-striped align-middle mb-0">
-            <thead class="table-dark">
+        <table class="table mb-0">
+            <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Nama</th>
+                    <th>#</th>
+                    <th>Nama Pelari</th>
+                    <th>Username</th>
                     <th>Usia</th>
                     <th>Level</th>
-                    <th>PR 5K (menit)</th>
+                    <th>PR 5K</th>
                     <th class="text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 {% for p in daftar_pelari %}
                 <tr>
-                    <td>{{ p.id }}</td>
-                    <td>{{ p.nama }}</td>
-                    <td>{{ p.usia }}</td>
+                    <td class="text-muted" style="font-size:0.8rem;">{{ p.id }}</td>
                     <td>
-                        <span class="badge bg-{{ 'success' if p.level == 'pemula' else ('warning text-dark' if p.level == 'menengah' else 'danger') }}">
-                            {{ p.level|capitalize }}
-                        </span>
+                        <span style="font-weight:700;color:var(--strava-black);">{{ p.nama }}</span>
                     </td>
-                    <td>{{ p.pr_5k_menit if p.pr_5k_menit else '-' }}</td>
+                    <td><code style="font-size:0.82rem;color:var(--strava-mid-gray);">{{ p.username }}</code></td>
+                    <td>{{ p.usia }} thn</td>
+                    <td>
+                        {% if p.level == 'pemula' %}
+                            <span class="badge" style="background:var(--strava-orange-light);color:var(--strava-orange);">Pemula</span>
+                        {% elif p.level == 'menengah' %}
+                            <span class="badge" style="background:#fff3cd;color:#856404;">Menengah</span>
+                        {% else %}
+                            <span class="badge" style="background:#f8d7da;color:#842029;">Lanjutan</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight:600;">
+                        {% if p.pr_5k_menit %}{{ "%.1f"|format(p.pr_5k_menit) }} mnt{% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
                     <td class="text-center">
-                        <a href="{{ url_for('admin_pelari_edit', pelari_id=p.id) }}"
-                           class="btn btn-sm btn-outline-primary me-1">Edit</a>
-                        <form method="POST" action="{{ url_for('admin_pelari_hapus', pelari_id=p.id) }}"
-                              class="d-inline"
-                              onsubmit="return confirm('Yakin ingin menghapus pelari {{ p.nama }}? Semua sesi latihan milik pelari ini juga akan ikut terhapus.')">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
-                        </form>
+                        <div class="d-flex gap-1 justify-content-center">
+                            <a href="{{ url_for('admin_pelari_edit', pelari_id=p.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('admin_pelari_hapus', pelari_id=p.id) }}" class="d-inline"
+                                  onsubmit="return confirm('Hapus pelari {{ p.nama }}? Semua sesi latihan juga akan terhapus.')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -55,6 +69,15 @@
     </div>
 </div>
 {% else %}
-<div class="alert alert-secondary">Belum ada data pelari.</div>
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-people" style="font-size:3rem;color:var(--strava-border);"></i>
+        <h5 class="mt-3 fw-700">Belum Ada Pelari</h5>
+        <p class="text-muted mb-3" style="font-size:0.9rem;">Tambahkan pelari pertama untuk memulai.</p>
+        <a href="{{ url_for('admin_pelari_tambah') }}" class="btn btn-primary">
+            <i class="bi bi-person-plus me-2"></i>Tambah Pelari Pertama
+        </a>
+    </div>
+</div>
 {% endif %}
 {% endblock %}

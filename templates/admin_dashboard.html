@@ -1,71 +1,91 @@
-<!--
-  admin_dashboard.html
-  Dashboard admin: kartu ringkasan (total pelari, total sesi, total km
-  minggu ini) + grafik rata-rata pace mingguan 4 minggu terakhir (Chart.js).
--->
 {% extends "admin_base.html" %}
 
 {% block title %}Dashboard Admin{% endblock %}
 
 {% block admin_content %}
-<h2 class="mb-4">Dashboard Admin</h2>
+<!-- Page Header -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <div class="section-label"><i class="bi bi-speedometer2 me-1"></i>Admin Panel</div>
+        <h2 class="fw-800 mb-0" style="letter-spacing:-0.5px;">Dashboard</h2>
+    </div>
+    <a href="{{ url_for('admin_risiko') }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-exclamation-triangle me-1"></i>Cek Risiko
+    </a>
+</div>
 
-<!-- ===== KARTU RINGKASAN ===== -->
+<!-- ===== STAT CARDS ===== -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card shadow-sm text-center">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase">Total Pelari</div>
-                <div class="fs-2 fw-bold text-primary">{{ total_pelari }}</div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card orange">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{{ total_pelari }}</div>
+                    <div class="stat-label">Pelari Terdaftar</div>
+                </div>
+                <i class="bi bi-people-fill stat-icon"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm text-center">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase">Total Sesi Latihan</div>
-                <div class="fs-2 fw-bold text-success">{{ total_sesi }}</div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card dark">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{{ total_sesi }}</div>
+                    <div class="stat-label">Total Sesi</div>
+                </div>
+                <i class="bi bi-journal-text stat-icon"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm text-center">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase">Total KM Minggu Ini</div>
-                <div class="fs-2 fw-bold text-info">{{ "%.1f"|format(total_km_minggu) }}</div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value" style="color:var(--strava-orange);">{{ "%.1f"|format(total_km_minggu) }}</div>
+                    <div class="stat-label" style="color:var(--strava-mid-gray);">KM Minggu Ini</div>
+                </div>
+                <i class="bi bi-geo-alt-fill stat-icon text-orange"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
         <a href="{{ url_for('admin_risiko') }}" class="text-decoration-none">
-            <div class="card shadow-sm text-center h-100 {{ 'border-danger' if jumlah_berisiko > 0 else 'border-success' }}">
-                <div class="card-body">
-                    <div class="text-muted small text-uppercase">Pelari Berisiko</div>
-                    <div class="fs-2 fw-bold {{ 'text-danger' if jumlah_berisiko > 0 else 'text-success' }}">
-                        {{ jumlah_berisiko }}
+            <div class="stat-card {{ 'orange' if jumlah_berisiko > 0 else 'white' }}" style="{% if jumlah_berisiko == 0 %}border:1.5px solid #34C759;{% endif %}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value" style="{% if jumlah_berisiko == 0 %}color:#34C759;{% endif %}">{{ jumlah_berisiko }}</div>
+                        <div class="stat-label" style="{% if jumlah_berisiko == 0 %}color:var(--strava-mid-gray);{% endif %}">Pelari Berisiko</div>
                     </div>
+                    <i class="bi bi-exclamation-triangle{% if jumlah_berisiko > 0 %}-fill{% endif %} stat-icon"></i>
                 </div>
             </div>
         </a>
     </div>
 </div>
 
-<!-- ===== GRAFIK RATA-RATA PACE 4 MINGGU TERAKHIR ===== -->
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Rata-rata Pace Mingguan (4 Minggu Terakhir)</h5>
-        <p class="text-muted small">
-            Grafik garis menampilkan rata-rata pace (menit/km) dari seluruh sesi
-            latihan per minggu. Semakin rendah berarti semakin cepat.
-        </p>
-        <canvas id="chartPaceMingguan" height="100"></canvas>
+<!-- ===== GRAFIK ===== -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-bar-chart-line me-2 text-orange"></i>Rata-rata Pace Mingguan (4 Minggu Terakhir)
+    </div>
+    <div class="card-body p-4">
+        <p class="text-muted" style="font-size:0.85rem;">Rata-rata pace (menit/km) dari seluruh sesi latihan per minggu. Nilai lebih rendah = lebih cepat.</p>
+        {% if chart_labels %}
+        <canvas id="chartPaceMingguan" height="90"></canvas>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-bar-chart" style="font-size:3rem; opacity:0.25;"></i>
+            <p class="mt-2 mb-0" style="font-size:0.9rem;">Belum ada data sesi latihan untuk ditampilkan.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- Chart.js via CDN -->
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% if chart_labels %}
 <script>
-    // Data dikirim dari backend sebagai JSON-safe list
     const labels = {{ chart_labels | tojson }};
     const dataValues = {{ chart_values | tojson }};
 
@@ -74,31 +94,45 @@
         data: {
             labels: labels,
             datasets: [{
-                label: 'Rata-rata Pace (menit/km)',
+                label: 'Avg Pace (menit/km)',
                 data: dataValues,
-                borderColor: '#0d6efd',
-                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                borderColor: '#FC4C02',
+                backgroundColor: 'rgba(252,76,2,0.08)',
                 fill: true,
-                tension: 0.3,
+                tension: 0.4,
                 pointRadius: 5,
-                pointBackgroundColor: '#0d6efd',
+                pointBackgroundColor: '#FC4C02',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
             }]
         },
         options: {
             responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1C1C1C',
+                    titleFont: { family: 'Inter', weight: '700' },
+                    bodyFont: { family: 'Inter' },
+                    padding: 12,
+                    cornerRadius: 8,
+                }
+            },
             scales: {
                 y: {
                     beginAtZero: false,
-                    title: { display: true, text: 'Pace (menit/km)' },
-                    // Pace: angka lebih kecil = lebih cepat, jadi kita bisa
-                    // reverse axis agar "lebih baik" di atas, tapi standarnya
-                    // biarkan normal supaya intuitif bagi pengguna non-runner.
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: { font: { family: 'Inter', size: 12 } },
+                    title: { display: true, text: 'Pace (menit/km)', font: { family: 'Inter', weight: '600', size: 11 } }
                 },
                 x: {
-                    title: { display: true, text: 'Minggu' }
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter', size: 12 } },
+                    title: { display: true, text: 'Minggu', font: { family: 'Inter', weight: '600', size: 11 } }
                 }
             }
         }
     });
 </script>
+{% endif %}
 {% endblock %}

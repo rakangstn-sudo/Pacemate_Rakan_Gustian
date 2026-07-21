@@ -1,54 +1,85 @@
 {% extends "base.html" %}
 
-{% block title %}Login Admin{% endblock %}
+{% block title %}Masuk{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-10">
-        <div class="row g-4">
+<div class="login-page-wrapper">
+    <div class="w-100">
+        <!-- Page Header -->
+        <div class="text-center mb-4">
+            <div class="hero-badge mx-auto" style="display:inline-flex;">
+                <i class="bi bi-lightning-fill"></i> Selamat datang kembali
+            </div>
+            <h2 class="fw-800 mt-2" style="letter-spacing:-0.5px;">Masuk ke PaceMate</h2>
+            <p class="text-muted" style="font-size:0.9rem;">Pilih jenis akun dan masukkan kredensial Anda</p>
+        </div>
+
+        <div class="row justify-content-center g-4">
             <!-- Login Pelari -->
-            <div class="col-md-6">
-                <div class="card shadow-sm h-100 border-primary">
+            <div class="col-md-5">
+                <div class="card login-card active-card">
                     <div class="card-body p-4">
-                        <h4 class="card-title text-center text-primary mb-4">Login Pelari</h4>
+                        <div class="d-flex align-items-center gap-2 mb-4">
+                            <div style="width:40px;height:40px;background:var(--strava-orange-light);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i class="bi bi-person-fill" style="color:var(--strava-orange);font-size:1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-700" style="font-size:1rem;">Login Pelari</div>
+                                <div class="text-muted" style="font-size:0.78rem;">Akses jadwal & progres latihan</div>
+                            </div>
+                        </div>
                         <form method="POST" action="{{ url_for('login') }}">
                             <input type="hidden" name="role" value="pelari">
                             <div class="mb-3">
-                                <label for="username_pelari" class="form-label fw-bold">Username</label>
-                                <input type="text" class="form-control" id="username_pelari" name="username" required>
+                                <label for="username_pelari" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username_pelari" name="username" placeholder="username_anda" required autocomplete="username">
                             </div>
                             <div class="mb-4">
-                                <label for="password_pelari" class="form-label fw-bold">Password</label>
-                                <input type="password" class="form-control" id="password_pelari" name="password" required>
+                                <label for="password_pelari" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password_pelari" name="password" placeholder="••••••••" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">Login Pelari</button>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Masuk sebagai Pelari
+                            </button>
                         </form>
-                        <div class="text-center mt-3">
-                            <small class="text-muted">Belum punya akun? <a href="{{ url_for('register') }}" class="text-decoration-none fw-bold">Daftar sekarang</a></small>
-                        </div>
+                        <div class="login-divider my-3">atau</div>
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-person-plus me-2"></i>Daftar Akun Baru
+                        </a>
                     </div>
                 </div>
             </div>
 
             <!-- Login Admin -->
-            <div class="col-md-6">
-                <div class="card shadow-sm h-100 border-secondary">
-                    <div class="card-body p-4 bg-light">
-                        <h4 class="card-title text-center text-secondary mb-4">Login Admin</h4>
+            <div class="col-md-5">
+                <div class="card login-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-2 mb-4">
+                            <div style="width:40px;height:40px;background:#f0f0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i class="bi bi-shield-fill" style="color:var(--strava-dark-gray);font-size:1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-700" style="font-size:1rem;">Login Admin</div>
+                                <div class="text-muted" style="font-size:0.78rem;">Pantau & kelola semua pelari</div>
+                            </div>
+                        </div>
                         <form method="POST" action="{{ url_for('login') }}">
                             <input type="hidden" name="role" value="admin">
                             <div class="mb-3">
-                                <label for="username_admin" class="form-label fw-bold">Username Admin</label>
-                                <input type="text" class="form-control" id="username_admin" name="username" required>
+                                <label for="username_admin" class="form-label">Username Admin</label>
+                                <input type="text" class="form-control" id="username_admin" name="username" placeholder="admin" required autocomplete="username">
                             </div>
                             <div class="mb-4">
-                                <label for="password_admin" class="form-label fw-bold">Password Admin</label>
-                                <input type="password" class="form-control" id="password_admin" name="password" required>
+                                <label for="password_admin" class="form-label">Password Admin</label>
+                                <input type="password" class="form-control" id="password_admin" name="password" placeholder="••••••••" required>
                             </div>
-                            <button type="submit" class="btn btn-secondary w-100">Login Admin</button>
+                            <button type="submit" class="btn btn-secondary w-100">
+                                <i class="bi bi-shield-lock me-2"></i>Masuk sebagai Admin
+                            </button>
                         </form>
-                        <div class="text-center mt-3">
-                            <small class="text-muted">Gunakan kredensial yang diberikan sistem.</small>
+                        <div class="login-divider my-3">info</div>
+                        <div class="text-center text-muted" style="font-size:0.8rem;">
+                            <i class="bi bi-info-circle me-1"></i> Gunakan kredensial yang diberikan sistem.
                         </div>
                     </div>
                 </div>

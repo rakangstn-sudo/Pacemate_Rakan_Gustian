@@ -1,52 +1,88 @@
 {% extends "base.html" %}
 
-{% block title %}Lapor Sesi Latihan{% endblock %}
+{% block title %}Lapor Sesi{% endblock %}
 
 {% block content %}
-<h2 class="mb-3">Lapor Sesi Latihan</h2>
-<p class="text-muted">
-    Catat hasil latihan lari Anda. Pace hasil akan dihitung otomatis
-    (waktu ÷ jarak) begitu form disimpan.
-</p>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <!-- Page Header -->
+        <div class="mb-4">
+            <div class="section-label"><i class="bi bi-plus-circle me-1"></i>Aktivitas</div>
+            <h2 class="fw-800 mb-1" style="letter-spacing:-0.5px;">Lapor Sesi Latihan</h2>
+            <p class="text-muted mb-0" style="font-size:0.9rem;">
+                Catat sesi latihan yang sudah selesai. Pace dihitung otomatis.
+            </p>
+        </div>
 
-<div class="card shadow-sm" style="max-width: 640px;">
-    <div class="card-body">
-        <form method="POST" action="{{ url_for('lapor') }}" class="row g-3">
-            <div class="col-md-6">
-                <label for="tanggal" class="form-label">Tanggal</label>
-                <input type="date" class="form-control" id="tanggal" name="tanggal" required>
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('lapor') }}">
+                    <div class="mb-4">
+                        <label for="tanggal" class="form-label">Tanggal Latihan</label>
+                        <input type="date" class="form-control" id="tanggal" name="tanggal" required>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <label for="jarak_km" class="form-label">Jarak (km)</label>
+                            <input type="number" step="0.01" min="0.01"
+                                class="form-control" id="jarak_km" name="jarak_km"
+                                placeholder="5.00" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="waktu_menit" class="form-label">Waktu (menit)</label>
+                            <input type="number" step="0.01" min="0.01"
+                                class="form-control" id="waktu_menit" name="waktu_menit"
+                                placeholder="30" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="jenis_latihan" class="form-label">Jenis Sesi</label>
+                        <div class="row g-2">
+                            {% for val, label, desc in [
+                                ('easy', 'Easy', 'Lari santai, napas mudah'),
+                                ('tempo', 'Tempo', 'Sedang-keras, bisa bicara sepatah'),
+                                ('interval', 'Interval', 'Cepat berulang dengan jeda'),
+                                ('long_run', 'Long Run', 'Jarak jauh dengan pace santai')
+                            ] %}
+                            <div class="col-6">
+                                <label class="d-block" style="cursor:pointer;">
+                                    <input type="radio" name="jenis_latihan" value="{{ val }}" class="d-none" required>
+                                    <div class="session-pill p-3" style="border:1.5px solid var(--strava-border);border-radius:10px;transition:all 0.15s;" 
+                                         onclick="selectSession(this, '{{ val }}')">
+                                        <div style="font-weight:700;font-size:0.875rem;">{{ label }}</div>
+                                        <div style="font-size:0.75rem;color:var(--strava-mid-gray);">{{ desc }}</div>
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle me-2"></i>Simpan Sesi Latihan
+                    </button>
+                </form>
             </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="jarak_km" class="form-label">Jarak (km)</label>
-                    <input
-                        type="number" step="0.01" min="0.01"
-                        class="form-control" id="jarak_km" name="jarak_km"
-                        placeholder="contoh: 5" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="waktu_menit" class="form-label">Waktu (menit)</label>
-                    <input
-                        type="number" step="0.01" min="0.01"
-                        class="form-control" id="waktu_menit" name="waktu_menit"
-                        placeholder="contoh: 30" required>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label for="jenis_latihan" class="form-label">Jenis Latihan</label>
-                <select class="form-select" id="jenis_latihan" name="jenis_latihan" required>
-                    <option value="" disabled selected>-- Pilih jenis --</option>
-                    <option value="easy">Easy</option>
-                    <option value="tempo">Tempo</option>
-                    <option value="interval">Interval</option>
-                    <option value="long_run">Long Run</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Simpan Sesi Latihan</button>
-        </form>
+        </div>
     </div>
 </div>
+
+<script>
+function selectSession(el, val) {
+    // reset all
+    document.querySelectorAll('.session-pill').forEach(p => {
+        p.style.borderColor = 'var(--strava-border)';
+        p.style.background = 'white';
+        p.style.color = 'var(--strava-black)';
+    });
+    // highlight selected
+    el.style.borderColor = 'var(--strava-orange)';
+    el.style.background = 'var(--strava-orange-light)';
+    el.style.color = 'var(--strava-orange)';
+    // set radio
+    el.closest('label').querySelector('input[type=radio]').checked = true;
+}
+</script>
 {% endblock %}

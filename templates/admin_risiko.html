@@ -1,84 +1,125 @@
 <!--
-  admin_risiko.html
-  Halaman fitur inti: Deteksi Risiko Lonjakan Volume Latihan
+  admin_risiko.html — Strava-style risk detection page
 -->
 {% extends "admin_base.html" %}
 
-{% block title %}Deteksi Risiko Latihan{% endblock %}
+{% block title %}Deteksi Risiko{% endblock %}
 
 {% block admin_content %}
-<div class="mb-4">
-    <h2>Deteksi Risiko Lonjakan Volume</h2>
-    <p class="text-muted">
-        Menganalisis total volume lari (km) setiap pelari minggu ini (7 hari terakhir) 
-        dibandingkan rata-rata beban 4 minggu sebelumnya. Jika terjadi peningkatan drastis 
-        (rasio > 1.3), pelari ditandai berisiko cedera/overtraining.
-    </p>
+<!-- Header -->
+<div class="d-flex align-items-start justify-content-between mb-4">
+    <div>
+        <div class="section-label"><i class="bi bi-exclamation-triangle-fill me-1"></i>Keamanan Latihan</div>
+        <h2 class="fw-800 mb-1" style="letter-spacing:-0.5px;">Deteksi Risiko Volume</h2>
+        <p class="text-muted mb-0" style="font-size:0.875rem;">
+            Rasio &gt; 1.3x dari rata-rata 4 minggu (atau acuan maks untuk pelari baru) = <strong>berisiko overtraining</strong>.
+        </p>
+    </div>
 </div>
 
 {% if data_risiko %}
-<div class="card shadow-sm">
+<!-- Summary chips -->
+{% set jumlah_berisiko = data_risiko | selectattr('berisiko') | list | length %}
+<div class="d-flex gap-3 mb-4">
+    <div style="background:{% if jumlah_berisiko > 0 %}var(--strava-orange){% else %}#34C759{% endif %};color:white;border-radius:10px;padding:0.75rem 1.25rem;display:inline-flex;align-items:center;gap:0.5rem;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span style="font-weight:800;font-size:1.5rem;line-height:1;">{{ jumlah_berisiko }}</span>
+        <span style="font-size:0.78rem;font-weight:600;opacity:0.9;">Berisiko</span>
+    </div>
+    <div style="background:var(--strava-light-gray);border:1.5px solid var(--strava-border);border-radius:10px;padding:0.75rem 1.25rem;display:inline-flex;align-items:center;gap:0.5rem;">
+        <i class="bi bi-people-fill text-orange"></i>
+        <span style="font-weight:800;font-size:1.5rem;line-height:1;">{{ data_risiko | length }}</span>
+        <span style="font-size:0.78rem;font-weight:600;color:var(--strava-mid-gray);">Total Pelari</span>
+    </div>
+</div>
+
+<div class="card">
     <div class="table-responsive">
-        <table class="table table-striped align-middle mb-0">
-            <thead class="table-dark">
+        <table class="table mb-0">
+            <thead>
                 <tr>
-                    <th>Nama Pelari</th>
-                    <th>Volume Minggu Ini</th>
-                    <th>Rata-rata 4 Minggu Lalu</th>
-                    <th>Rasio Peningkatan</th>
-                    <th>Status Risiko</th>
+                    <th>Pelari</th>
+                    <th>Vol. Minggu Ini</th>
+                    <th>Rata-rata / Acuan</th>
+                    <th>Rasio</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for d in data_risiko %}
-                <tr>
-                    <td class="fw-bold">{{ d.nama }} <span class="badge bg-secondary ms-1">{{ d.level|title }}</span></td>
-                    <td>{{ "%.1f"|format(d.total_km_minggu_ini) }} km</td>
+                <tr style="{% if d.berisiko %}background: rgba(252,76,2,0.03);{% endif %}">
+                    <td>
+                        <span style="font-weight:700;">{{ d.nama }}</span>
+                        {% if d.level == 'pemula' %}
+                            <span class="badge ms-1" style="background:var(--strava-orange-light);color:var(--strava-orange);">Pemula</span>
+                        {% elif d.level == 'menengah' %}
+                            <span class="badge ms-1" style="background:#fff3cd;color:#856404;">Menengah</span>
+                        {% else %}
+                            <span class="badge ms-1" style="background:#f8d7da;color:#842029;">Lanjutan</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight:700;font-size:1rem;">{{ "%.1f"|format(d.total_km_minggu_ini) }} <span style="font-size:0.78rem;font-weight:500;color:var(--strava-mid-gray);">km</span></td>
                     <td>
                         {% if d.rata2_km_4minggu > 0 %}
                             {{ "%.1f"|format(d.rata2_km_4minggu) }} km
                         {% else %}
-                            <span class="text-muted fst-italic">Data tidak cukup (Acuan maks: {{ d.baseline }} km)</span>
+                            <span class="text-muted fst-italic" style="font-size:0.82rem;">
+                                <i class="bi bi-info-circle me-1"></i>Acuan maks: {{ d.baseline }} km
+                            </span>
                         {% endif %}
                     </td>
                     <td>
-                        {{ "%.2f"|format(d.rasio) }}x
+                        <span style="font-weight:800;font-size:1.1rem;color:{% if d.rasio > 1.3 %}var(--strava-orange){% else %}#34C759{% endif %};">
+                            {{ "%.2f"|format(d.rasio) }}x
+                        </span>
                     </td>
                     <td>
-                        {% if d.berisiko %}
-                            <span class="badge bg-danger">Risiko Lonjakan Volume</span>
-                            <button type="button" class="btn btn-sm btn-outline-danger ms-2 mt-1" data-bs-toggle="modal" data-bs-target="#modalPeringatan{{ d.id }}">
-                                Beri Peringatan
-                            </button>
-                        {% else %}
-                            <span class="badge bg-success">Aman</span>
-                        {% endif %}
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            {% if d.berisiko %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Risiko Volume
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal" data-bs-target="#modalPeringatan{{ d.id }}">
+                                    <i class="bi bi-bell-fill me-1"></i>Peringatkan
+                                </button>
+                            {% else %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Aman
+                                </span>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
 
-                <!-- Modal Peringatan -->
+                <!-- Modal -->
                 {% if d.berisiko %}
-                <div class="modal fade" id="modalPeringatan{{ d.id }}" tabindex="-1" aria-labelledby="modalPeringatanLabel{{ d.id }}" aria-hidden="true">
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="modalPeringatanLabel{{ d.id }}">Beri Peringatan ke {{ d.nama }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                      </div>
-                      <form method="POST" action="{{ url_for('admin_pelari_peringatkan', pelari_id=d.id) }}">
-                          <div class="modal-body">
-                            <div class="mb-3">
-                                <label for="pesan" class="form-label">Pesan Peringatan</label>
-                                <textarea class="form-control" name="pesan" id="pesan" rows="3" required>Halo {{ d.nama }}, kami mendeteksi lonjakan volume latihan yang berisiko pada minggu ini. Harap beristirahat dengan cukup untuk menghindari cedera.</textarea>
+                <div class="modal fade" id="modalPeringatan{{ d.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content" style="border-radius:16px;border:none;overflow:hidden;">
+                            <div style="background:var(--strava-orange);padding:1.25rem 1.5rem;color:white;">
+                                <h5 class="modal-title fw-700 mb-0">
+                                    <i class="bi bi-bell-fill me-2"></i>Peringatan ke {{ d.nama }}
+                                </h5>
                             </div>
-                          </div>
-                          <div class="modal-header border-0 pt-0">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                            <button type="submit" class="btn btn-danger">Kirim Peringatan</button>
-                          </div>
-                      </form>
+                            <form method="POST" action="{{ url_for('admin_pelari_peringatkan', pelari_id=d.id) }}">
+                                <div class="modal-body p-4">
+                                    <label class="form-label">Pesan Peringatan</label>
+                                    <textarea class="form-control" name="pesan" rows="4" required
+                                              style="font-size:0.9rem;">Halo {{ d.nama }}, kami mendeteksi lonjakan volume latihan yang berisiko minggu ini (rasio {{ "%.2f"|format(d.rasio) }}x). Harap kurangi intensitas dan istirahat cukup untuk menghindari cedera.</textarea>
+                                    <div class="text-muted mt-2" style="font-size:0.78rem;">
+                                        <i class="bi bi-info-circle me-1"></i>Pesan ini akan tampil di semua halaman pelari hingga mereka menandai sudah dibaca.
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0 pt-0">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-send-fill me-2"></i>Kirim Peringatan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                  </div>
                 </div>
                 {% endif %}
                 {% endfor %}
@@ -86,7 +127,14 @@
         </table>
     </div>
 </div>
+
 {% else %}
-<div class="alert alert-secondary">Belum ada data pelari yang bisa dianalisis.</div>
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-shield-check" style="font-size:3rem;color:var(--strava-border);"></i>
+        <h5 class="mt-3 fw-700">Belum Ada Data</h5>
+        <p class="text-muted mb-0" style="font-size:0.9rem;">Tambahkan pelari dan sesi latihan untuk mulai menganalisis risiko.</p>
+    </div>
+</div>
 {% endif %}
 {% endblock %}
