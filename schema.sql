@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS admin (
 -- Tabel pelari: menyimpan data pelari yang dilatih/dipantau
 CREATE TABLE IF NOT EXISTS pelari (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
     nama TEXT NOT NULL,
     usia INTEGER NOT NULL,
     level TEXT NOT NULL CHECK (level IN ('pemula', 'menengah', 'lanjutan')),

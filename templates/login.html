@@ -7,7 +7,7 @@
     <div class="col-md-5">
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <h4 class="card-title text-center mb-4">Login Admin PaceMate</h4>
+                <h4 class="card-title text-center mb-4">Login PaceMate</h4>
 
                 <form method="POST" action="{{ url_for('login') }}">
                     <div class="mb-3">
@@ -32,6 +32,10 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">Login</button>
+                    
+                    <div class="mt-3 text-center small">
+                        Belum punya akun? <a href="{{ url_for('register') }}">Daftar sebagai pelari</a>
+                    </div>
                 </form>
             </div>
         </div>

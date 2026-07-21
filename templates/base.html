@@ -28,16 +28,20 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">Beranda</a>
                     </li>
+                    
+                    {% if session.get('pelari_id') %}
+                    <!-- Menu Pelari -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('jadwal') }}">Generator Jadwal</a>
+                        <a class="nav-link" href="{{ url_for('jadwal') }}">Jadwal Saya</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('lapor') }}">Lapor Sesi Latihan</a>
+                        <a class="nav-link" href="{{ url_for('lapor') }}">Lapor Sesi</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('progres') }}">Progres</a>
+                        <a class="nav-link" href="{{ url_for('progres') }}">Progres Saya</a>
                     </li>
-                    {% if session.get('admin_id') %}
+                    {% elif session.get('admin_id') %}
+                    <!-- Menu Admin -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Dashboard Admin</a>
                     </li>
@@ -46,10 +50,14 @@
 
                 <div class="d-flex align-items-center gap-3">
                     {% if session.get('admin_id') %}
-                        <span class="text-light small">Login sebagai: {{ session.get('username') }}</span>
+                        <span class="text-light small">Admin: {{ session.get('username') }}</span>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+                    {% elif session.get('pelari_id') %}
+                        <span class="text-light small">Pelari: {{ session.get('username') }}</span>
                         <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
                     {% else %}
-                        <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-sm">Login Admin</a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-sm">Login</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-light btn-sm">Register</a>
                     {% endif %}
                 </div>
             </div>

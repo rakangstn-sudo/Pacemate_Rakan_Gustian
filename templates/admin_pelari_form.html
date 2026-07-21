@@ -15,9 +15,16 @@
     <div class="card-body">
         <form method="POST">
             <div class="mb-3">
-                <label for="nama" class="form-label">Nama Pelari</label>
-                <input type="text" class="form-control" id="nama" name="nama"
-                       value="{{ pelari.nama if pelari else '' }}" required>
+                <label for="nama" class="form-label">Nama Lengkap</label>
+                <input type="text" class="form-control" id="nama" name="nama" value="{{ pelari.nama if pelari else '' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" value="{{ pelari.username if pelari else '' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password {% if pelari %}(Kosongkan jika tidak ingin diubah){% endif %}</label>
+                <input type="password" class="form-control" id="password" name="password" {% if not pelari %}required{% endif %}>
             </div>
 
             <div class="mb-3">

@@ -5,7 +5,7 @@
 
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 import database
 import pace_engine
@@ -21,10 +21,10 @@ JENIS_LATIHAN_VALID = ["easy", "tempo", "interval", "long_run"]
 
 
 # ---------------------------------------------------------------------------
-# DECORATOR: login_required
+# DECORATOR: admin_required
 # Melindungi route agar hanya bisa diakses jika admin sudah login (ada session).
 # ---------------------------------------------------------------------------
-def login_required(view_func):
+def admin_required(view_func):
     @wraps(view_func)
     def wrapped_view(*args, **kwargs):
         if session.get("admin_id") is None:
@@ -33,6 +33,19 @@ def login_required(view_func):
         return view_func(*args, **kwargs)
     return wrapped_view
 
+
+# ---------------------------------------------------------------------------
+# DECORATOR: pelari_required
+# Melindungi route agar hanya bisa diakses jika pelari sudah login.
+# ---------------------------------------------------------------------------
+def pelari_required(view_func):
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if session.get("pelari_id") is None:
+            flash("Silakan login sebagai Pelari untuk mengakses halaman ini.", "warning")
+            return redirect(url_for("login"))
+        return view_func(*args, **kwargs)
+    return wrapped_view
 
 # ===========================================================================
 # ROUTE PUBLIK
@@ -43,59 +56,42 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/jadwal", methods=["GET", "POST"])
+@app.route("/jadwal", methods=["GET"])
+@pelari_required
 def jadwal():
-    jadwal_hasil = None
-    prediksi_race = None
-    vdot = None
-    pr_menit_input = None
-    level_input = None
+    db = database.get_db()
+    pelari_id = session.get("pelari_id")
+    pelari = db.execute("SELECT pr_5k_menit, level FROM pelari WHERE id = ?", (pelari_id,)).fetchone()
+    
+    if not pelari or not pelari["pr_5k_menit"]:
+        flash("Mohon perbarui data waktu PR 5K Anda agar sistem bisa membuat jadwal.", "warning")
+        return redirect(url_for("index"))
 
-    if request.method == "POST":
-        pr_menit_raw = request.form.get("pr_menit", "").strip()
-        level_input = request.form.get("level", "").strip()
-
-        error = None
-        try:
-            pr_menit_input = float(pr_menit_raw)
-        except ValueError:
-            error = "Waktu PR harus berupa angka."
-        else:
-            if not (10 <= pr_menit_input <= 60):
-                error = "Waktu PR 5K harus antara 10 dan 60 menit (nilai yang realistis)."
-
-        if level_input not in ("pemula", "menengah", "lanjutan"):
-            error = "Level harus dipilih: pemula, menengah, atau lanjutan."
-
-        if error:
-            flash(error, "danger")
-        else:
-            jadwal_hasil, vdot = pace_engine.generate_jadwal(pr_menit_input, level_input)
-            prediksi_race = pace_engine.hitung_prediksi_race(pr_menit_input)
+    jadwal_hasil, vdot = pace_engine.generate_jadwal(pelari["pr_5k_menit"], pelari["level"])
+    prediksi_race = pace_engine.hitung_prediksi_race(pelari["pr_5k_menit"])
 
     return render_template(
         "jadwal.html",
         jadwal_hasil=jadwal_hasil,
         prediksi_race=prediksi_race,
         vdot=vdot,
-        pr_menit_input=pr_menit_input,
-        level_input=level_input,
     )
 
 
 @app.route("/lapor", methods=["GET", "POST"])
+@pelari_required
 def lapor():
     db = database.get_db()
+    pelari_id = session.get("pelari_id")
 
     if request.method == "POST":
-        pelari_id = request.form.get("pelari_id", "").strip()
         tanggal = request.form.get("tanggal", "").strip()
         jarak_km_raw = request.form.get("jarak_km", "").strip()
         waktu_menit_raw = request.form.get("waktu_menit", "").strip()
         jenis_latihan = request.form.get("jenis_latihan", "").strip()
 
         error = None
-        if not all([pelari_id, tanggal, jarak_km_raw, waktu_menit_raw, jenis_latihan]):
+        if not all([tanggal, jarak_km_raw, waktu_menit_raw, jenis_latihan]):
             error = "Semua field wajib diisi."
 
         jarak_km = waktu_menit = None
@@ -126,70 +122,115 @@ def lapor():
             flash("Sesi latihan berhasil dicatat.", "success")
             return redirect(url_for("lapor"))
 
-    daftar_pelari = db.execute("SELECT id, nama FROM pelari ORDER BY nama").fetchall()
-    return render_template("lapor.html", daftar_pelari=daftar_pelari)
+    return render_template("lapor.html")
 
 
 @app.route("/progres", methods=["GET"])
+@pelari_required
 def progres():
     db = database.get_db()
+    pelari_id = session.get("pelari_id")
 
-    daftar_pelari = db.execute("SELECT * FROM pelari ORDER BY nama").fetchall()
+    pelari = db.execute("SELECT * FROM pelari WHERE id = ?", (pelari_id,)).fetchone()
 
-    data_progres = []
-    for p in daftar_pelari:
-        total_km_minggu = db.execute(
-            """SELECT COALESCE(SUM(jarak_km), 0) AS total
-               FROM sesi_latihan
-               WHERE pelari_id = ?
-                 AND tanggal >= date('now', '-6 days')""",
-            (p["id"],),
-        ).fetchone()["total"]
+    total_km_minggu = db.execute(
+        """SELECT COALESCE(SUM(jarak_km), 0) AS total
+           FROM sesi_latihan
+           WHERE pelari_id = ?
+             AND tanggal >= date('now', '-6 days')""",
+        (pelari_id,),
+    ).fetchone()["total"]
 
-        sesi_terbaru = db.execute(
-            """SELECT * FROM sesi_latihan
-               WHERE pelari_id = ?
-               ORDER BY tanggal DESC, id DESC
-               LIMIT 5""",
-            (p["id"],),
-        ).fetchall()
+    sesi_terbaru = db.execute(
+        """SELECT * FROM sesi_latihan
+           WHERE pelari_id = ?
+           ORDER BY tanggal DESC, id DESC
+           LIMIT 5""",
+        (pelari_id,),
+    ).fetchall()
 
-        data_progres.append({
-            "pelari": p,
-            "total_km_minggu": total_km_minggu,
-            "sesi_terbaru": sesi_terbaru,
-        })
+    data_progres = [{
+        "pelari": pelari,
+        "total_km_minggu": total_km_minggu,
+        "sesi_terbaru": sesi_terbaru,
+    }]
 
     return render_template("progres.html", data_progres=data_progres, format_pace=pace_engine.format_pace)
 
 
 # ===========================================================================
-# ROUTE: Login & Logout
+# ROUTE: Login, Register, Logout
 # ===========================================================================
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if session.get("pelari_id") is not None or session.get("admin_id") is not None:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        nama = request.form.get("nama", "").strip()
+        usia = request.form.get("usia", "").strip()
+        level = request.form.get("level", "").strip()
+        pr_5k = request.form.get("pr_5k_menit", "").strip()
+
+        db = database.get_db()
+        
+        # Validasi duplikat username (admin/pelari)
+        existing_pelari = db.execute("SELECT id FROM pelari WHERE username = ?", (username,)).fetchone()
+        existing_admin = db.execute("SELECT id FROM admin WHERE username = ?", (username,)).fetchone()
+        
+        if existing_pelari or existing_admin:
+            flash("Username sudah digunakan, silakan pilih yang lain.", "danger")
+            return redirect(url_for("register"))
+
+        password_hash = generate_password_hash(password)
+        db.execute(
+            """INSERT INTO pelari (username, password_hash, nama, usia, level, pr_5k_menit) 
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (username, password_hash, nama, int(usia) if usia else 25, level, float(pr_5k) if pr_5k else 0.0)
+        )
+        db.commit()
+        flash("Pendaftaran berhasil! Silakan login.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if session.get("admin_id") is not None:
         return redirect(url_for("admin_dashboard"))
+    if session.get("pelari_id") is not None:
+        return redirect(url_for("index"))
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
         db = database.get_db()
-        admin = db.execute(
-            "SELECT * FROM admin WHERE username = ?", (username,)
-        ).fetchone()
 
-        if admin is None or not check_password_hash(admin["password_hash"], password):
-            flash("Username atau password salah.", "danger")
-            return redirect(url_for("login"))
+        # 1. Cek tabel admin
+        admin = db.execute("SELECT * FROM admin WHERE username = ?", (username,)).fetchone()
+        if admin and check_password_hash(admin["password_hash"], password):
+            session.clear()
+            session["admin_id"] = admin["id"]
+            session["username"] = admin["username"]
+            flash(f"Selamat datang Admin {admin['username']}!", "success")
+            return redirect(url_for("admin_dashboard"))
 
-        session.clear()
-        session["admin_id"] = admin["id"]
-        session["username"] = admin["username"]
-        flash(f"Selamat datang kembali, {admin['username']}!", "success")
-        return redirect(url_for("admin_dashboard"))
+        # 2. Cek tabel pelari
+        pelari = db.execute("SELECT * FROM pelari WHERE username = ?", (username,)).fetchone()
+        if pelari and check_password_hash(pelari["password_hash"], password):
+            session.clear()
+            session["pelari_id"] = pelari["id"]
+            session["username"] = pelari["username"]
+            flash(f"Selamat datang {pelari['nama']}!", "success")
+            return redirect(url_for("index"))
+
+        flash("Username atau password salah.", "danger")
+        return redirect(url_for("login"))
 
     return render_template("login.html")
 
@@ -207,7 +248,7 @@ def logout():
 # ===========================================================================
 
 @app.route("/admin/dashboard")
-@login_required
+@admin_required
 def admin_dashboard():
     db = database.get_db()
 
@@ -269,7 +310,7 @@ def admin_dashboard():
 # ===========================================================================
 
 @app.route("/admin/risiko")
-@login_required
+@admin_required
 def admin_risiko():
     db = database.get_db()
     daftar_pelari = db.execute("SELECT id, nama FROM pelari ORDER BY nama").fetchall()
@@ -314,7 +355,7 @@ def admin_risiko():
 # ===========================================================================
 
 @app.route("/admin/pelari")
-@login_required
+@admin_required
 def admin_pelari_list():
     db = database.get_db()
     daftar_pelari = db.execute("SELECT * FROM pelari ORDER BY nama").fetchall()
@@ -322,18 +363,20 @@ def admin_pelari_list():
 
 
 @app.route("/admin/pelari/tambah", methods=["GET", "POST"])
-@login_required
+@admin_required
 def admin_pelari_tambah():
     if request.method == "POST":
         nama = request.form.get("nama", "").strip()
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
         usia_raw = request.form.get("usia", "").strip()
         level = request.form.get("level", "").strip()
         pr_raw = request.form.get("pr_5k_menit", "").strip()
 
         # --- Validasi server-side ---
         error = None
-        if not nama:
-            error = "Nama pelari tidak boleh kosong."
+        if not nama or not username or not password:
+            error = "Nama, Username, dan Password wajib diisi."
 
         usia = None
         if error is None:
@@ -355,14 +398,20 @@ def admin_pelari_tambah():
                     error = "PR 5K harus berupa angka positif."
             except ValueError:
                 error = "PR 5K harus berupa angka."
+                
+        db = database.get_db()
+        if error is None:
+            existing = db.execute("SELECT id FROM pelari WHERE username = ?", (username,)).fetchone()
+            if existing:
+                error = "Username sudah digunakan."
 
         if error:
             flash(error, "danger")
         else:
-            db = database.get_db()
+            password_hash = generate_password_hash(password)
             db.execute(
-                "INSERT INTO pelari (nama, usia, level, pr_5k_menit) VALUES (?, ?, ?, ?)",
-                (nama, usia, level, pr_5k),
+                "INSERT INTO pelari (username, password_hash, nama, usia, level, pr_5k_menit) VALUES (?, ?, ?, ?, ?, ?)",
+                (username, password_hash, nama, usia, level, pr_5k),
             )
             db.commit()
             flash(f"Pelari '{nama}' berhasil ditambahkan.", "success")
@@ -372,7 +421,7 @@ def admin_pelari_tambah():
 
 
 @app.route("/admin/pelari/<int:pelari_id>/edit", methods=["GET", "POST"])
-@login_required
+@admin_required
 def admin_pelari_edit(pelari_id):
     db = database.get_db()
     pelari = db.execute("SELECT * FROM pelari WHERE id = ?", (pelari_id,)).fetchone()
@@ -383,13 +432,15 @@ def admin_pelari_edit(pelari_id):
 
     if request.method == "POST":
         nama = request.form.get("nama", "").strip()
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
         usia_raw = request.form.get("usia", "").strip()
         level = request.form.get("level", "").strip()
         pr_raw = request.form.get("pr_5k_menit", "").strip()
 
         error = None
-        if not nama:
-            error = "Nama pelari tidak boleh kosong."
+        if not nama or not username:
+            error = "Nama dan Username tidak boleh kosong."
 
         usia = None
         if error is None:
@@ -411,23 +462,35 @@ def admin_pelari_edit(pelari_id):
                     error = "PR 5K harus berupa angka positif."
             except ValueError:
                 error = "PR 5K harus berupa angka."
+                
+        if error is None:
+            existing = db.execute("SELECT id FROM pelari WHERE username = ? AND id != ?", (username, pelari_id)).fetchone()
+            if existing:
+                error = "Username sudah digunakan oleh pengguna lain."
 
         if error:
             flash(error, "danger")
         else:
-            db.execute(
-                "UPDATE pelari SET nama=?, usia=?, level=?, pr_5k_menit=? WHERE id=?",
-                (nama, usia, level, pr_5k, pelari_id),
-            )
+            if password:
+                password_hash = generate_password_hash(password)
+                db.execute(
+                    "UPDATE pelari SET username = ?, password_hash = ?, nama = ?, usia = ?, level = ?, pr_5k_menit = ? WHERE id = ?",
+                    (username, password_hash, nama, usia, level, pr_5k, pelari_id),
+                )
+            else:
+                db.execute(
+                    "UPDATE pelari SET username = ?, nama = ?, usia = ?, level = ?, pr_5k_menit = ? WHERE id = ?",
+                    (username, nama, usia, level, pr_5k, pelari_id),
+                )
             db.commit()
-            flash(f"Data pelari '{nama}' berhasil diperbarui.", "success")
+            flash("Data pelari berhasil diperbarui.", "success")
             return redirect(url_for("admin_pelari_list"))
 
     return render_template("admin_pelari_form.html", active_menu="pelari", pelari=pelari)
 
 
 @app.route("/admin/pelari/<int:pelari_id>/hapus", methods=["POST"])
-@login_required
+@admin_required
 def admin_pelari_hapus(pelari_id):
     db = database.get_db()
     pelari = db.execute("SELECT nama FROM pelari WHERE id = ?", (pelari_id,)).fetchone()
@@ -448,7 +511,7 @@ def admin_pelari_hapus(pelari_id):
 # ===========================================================================
 
 @app.route("/admin/sesi")
-@login_required
+@admin_required
 def admin_sesi_list():
     db = database.get_db()
     # JOIN ke tabel pelari untuk menampilkan nama pelari di daftar sesi
@@ -467,7 +530,7 @@ def admin_sesi_list():
 
 
 @app.route("/admin/sesi/tambah", methods=["GET", "POST"])
-@login_required
+@admin_required
 def admin_sesi_tambah():
     db = database.get_db()
 
@@ -515,7 +578,7 @@ def admin_sesi_tambah():
 
 
 @app.route("/admin/sesi/<int:sesi_id>/edit", methods=["GET", "POST"])
-@login_required
+@admin_required
 def admin_sesi_edit(sesi_id):
     db = database.get_db()
     sesi = db.execute("SELECT * FROM sesi_latihan WHERE id = ?", (sesi_id,)).fetchone()
@@ -569,7 +632,7 @@ def admin_sesi_edit(sesi_id):
 
 
 @app.route("/admin/sesi/<int:sesi_id>/hapus", methods=["POST"])
-@login_required
+@admin_required
 def admin_sesi_hapus(sesi_id):
     db = database.get_db()
     sesi = db.execute("SELECT id FROM sesi_latihan WHERE id = ?", (sesi_id,)).fetchone()
@@ -590,7 +653,7 @@ def admin_sesi_hapus(sesi_id):
 # ===========================================================================
 
 @app.route("/dashboard")
-@login_required
+@admin_required
 def dashboard():
     return redirect(url_for("admin_dashboard"))
 

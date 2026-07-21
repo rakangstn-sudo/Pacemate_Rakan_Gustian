@@ -11,42 +11,6 @@
     Daniels-Gilbert.
 </p>
 
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <form method="POST" action="{{ url_for('jadwal') }}" class="row g-3">
-            <div class="col-md-6">
-                <label for="pr_menit" class="form-label">Waktu PR Lari 5K (menit)</label>
-                <input
-                    type="number"
-                    step="0.01"
-                    min="10"
-                    max="60"
-                    class="form-control"
-                    id="pr_menit"
-                    name="pr_menit"
-                    value="{{ pr_menit_input if pr_menit_input is not none else '' }}"
-                    placeholder="contoh: 25.5"
-                    required>
-                <div class="form-text">Antara 10 - 60 menit (nilai yang realistis untuk 5K).</div>
-            </div>
-
-            <div class="col-md-6">
-                <label for="level" class="form-label">Level Pelari</label>
-                <select class="form-select" id="level" name="level" required>
-                    <option value="" disabled {{ 'selected' if not level_input else '' }}>-- Pilih level --</option>
-                    <option value="pemula" {{ 'selected' if level_input == 'pemula' else '' }}>Pemula</option>
-                    <option value="menengah" {{ 'selected' if level_input == 'menengah' else '' }}>Menengah</option>
-                    <option value="lanjutan" {{ 'selected' if level_input == 'lanjutan' else '' }}>Lanjutan</option>
-                </select>
-            </div>
-
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary">Buat Jadwal</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 {% if jadwal_hasil %}
 <div class="card shadow-sm mb-4">
     <div class="card-body">
