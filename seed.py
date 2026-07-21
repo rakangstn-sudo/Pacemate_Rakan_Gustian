@@ -1,16 +1,19 @@
 # seed.py
-# Script kecil untuk membuat SATU akun admin awal.
-# Jalankan sekali saja setelah database dibuat:
+# Script kecil untuk membuat SATU akun admin awal di database PostgreSQL (Supabase).
+# Jalankan sekali saja setelah schema dibuat di Supabase SQL Editor:
 #
-#   1) flask init-db      -> membuat tabel dari schema.sql
-#   2) python seed.py     -> membuat akun admin pertama
+#   py seed.py    -> membuat akun admin pertama
 #
 # Password akan otomatis di-hash menggunakan werkzeug.security sebelum disimpan.
 
-import sqlite3
+import os
+import psycopg2
+import psycopg2.extras
 from werkzeug.security import generate_password_hash
+from dotenv import load_dotenv
 
-DATABASE = "pacemate.db"
+load_dotenv()
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 # Ganti sesuai kebutuhan sebelum dijalankan
 USERNAME_ADMIN = "admin"
@@ -18,20 +21,19 @@ PASSWORD_ADMIN = "admin123"
 
 
 def seed_admin():
-    conn = sqlite3.connect(DATABASE)
-    cur = conn.cursor()
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Cek dulu apakah username sudah ada, agar tidak duplikat
-    existing = cur.execute(
-        "SELECT id FROM admin WHERE username = ?", (USERNAME_ADMIN,)
-    ).fetchone()
+    cur.execute("SELECT id FROM admin WHERE username = %s", (USERNAME_ADMIN,))
+    existing = cur.fetchone()
 
     if existing:
         print(f"Akun admin '{USERNAME_ADMIN}' sudah ada. Tidak ada perubahan.")
     else:
         password_hash = generate_password_hash(PASSWORD_ADMIN)
         cur.execute(
-            "INSERT INTO admin (username, password_hash) VALUES (?, ?)",
+            "INSERT INTO admin (username, password_hash) VALUES (%s, %s)",
             (USERNAME_ADMIN, password_hash),
         )
         conn.commit()
