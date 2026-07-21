@@ -1,0 +1,60 @@
+<!--
+  admin_sesi.html
+  Halaman daftar sesi latihan (CRUD: list + hapus).
+  Admin bisa melihat semua sesi dari semua pelari.
+-->
+{% extends "admin_base.html" %}
+
+{% block title %}Kelola Sesi Latihan{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Kelola Sesi Latihan</h2>
+    <a href="{{ url_for('admin_sesi_tambah') }}" class="btn btn-primary">+ Tambah Sesi</a>
+</div>
+
+{% if daftar_sesi %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Pelari</th>
+                    <th>Tanggal</th>
+                    <th>Jarak (km)</th>
+                    <th>Waktu (menit)</th>
+                    <th>Jenis</th>
+                    <th>Pace (min/km)</th>
+                    <th class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in daftar_sesi %}
+                <tr>
+                    <td>{{ s.id }}</td>
+                    <td>{{ s.nama_pelari }}</td>
+                    <td>{{ s.tanggal }}</td>
+                    <td>{{ s.jarak_km }}</td>
+                    <td>{{ s.waktu_menit }}</td>
+                    <td>{{ s.jenis_latihan }}</td>
+                    <td>{{ format_pace(s.pace_hasil) }}</td>
+                    <td class="text-center">
+                        <a href="{{ url_for('admin_sesi_edit', sesi_id=s.id) }}"
+                           class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                        <form method="POST" action="{{ url_for('admin_sesi_hapus', sesi_id=s.id) }}"
+                              class="d-inline"
+                              onsubmit="return confirm('Yakin ingin menghapus sesi latihan ini?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-secondary">Belum ada data sesi latihan.</div>
+{% endif %}
+{% endblock %}

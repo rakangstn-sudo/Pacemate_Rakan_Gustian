@@ -1,0 +1,60 @@
+<!--
+  admin_pelari.html
+  Halaman daftar pelari (CRUD: list + hapus).
+  Tombol Tambah dan Edit mengarah ke form terpisah (admin_pelari_form.html).
+-->
+{% extends "admin_base.html" %}
+
+{% block title %}Kelola Pelari{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Kelola Pelari</h2>
+    <a href="{{ url_for('admin_pelari_tambah') }}" class="btn btn-primary">+ Tambah Pelari</a>
+</div>
+
+{% if daftar_pelari %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Nama</th>
+                    <th>Usia</th>
+                    <th>Level</th>
+                    <th>PR 5K (menit)</th>
+                    <th class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in daftar_pelari %}
+                <tr>
+                    <td>{{ p.id }}</td>
+                    <td>{{ p.nama }}</td>
+                    <td>{{ p.usia }}</td>
+                    <td>
+                        <span class="badge bg-{{ 'success' if p.level == 'pemula' else ('warning text-dark' if p.level == 'menengah' else 'danger') }}">
+                            {{ p.level|capitalize }}
+                        </span>
+                    </td>
+                    <td>{{ p.pr_5k_menit if p.pr_5k_menit else '-' }}</td>
+                    <td class="text-center">
+                        <a href="{{ url_for('admin_pelari_edit', pelari_id=p.id) }}"
+                           class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                        <form method="POST" action="{{ url_for('admin_pelari_hapus', pelari_id=p.id) }}"
+                              class="d-inline"
+                              onsubmit="return confirm('Yakin ingin menghapus pelari {{ p.nama }}? Semua sesi latihan milik pelari ini juga akan ikut terhapus.')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-secondary">Belum ada data pelari.</div>
+{% endif %}
+{% endblock %}

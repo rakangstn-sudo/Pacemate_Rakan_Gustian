@@ -1,0 +1,59 @@
+<!--
+  admin_pelari_form.html
+  Form untuk Tambah atau Edit data pelari.
+  Satu template dipakai untuk kedua mode; jika variabel 'pelari' ada
+  berarti mode edit, kalau tidak berarti mode tambah.
+-->
+{% extends "admin_base.html" %}
+
+{% block title %}{{ 'Edit' if pelari else 'Tambah' }} Pelari{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-3">{{ 'Edit' if pelari else 'Tambah' }} Pelari</h2>
+
+<div class="card shadow-sm" style="max-width: 600px;">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="nama" class="form-label">Nama Pelari</label>
+                <input type="text" class="form-control" id="nama" name="nama"
+                       value="{{ pelari.nama if pelari else '' }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="usia" class="form-label">Usia (tahun)</label>
+                <input type="number" class="form-control" id="usia" name="usia"
+                       min="1" max="120"
+                       value="{{ pelari.usia if pelari else '' }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="level" class="form-label">Level</label>
+                <select class="form-select" id="level" name="level" required>
+                    <option value="" disabled {{ 'selected' if not pelari else '' }}>-- Pilih level --</option>
+                    <option value="pemula"
+                        {{ 'selected' if pelari and pelari.level == 'pemula' else '' }}>Pemula</option>
+                    <option value="menengah"
+                        {{ 'selected' if pelari and pelari.level == 'menengah' else '' }}>Menengah</option>
+                    <option value="lanjutan"
+                        {{ 'selected' if pelari and pelari.level == 'lanjutan' else '' }}>Lanjutan</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="pr_5k_menit" class="form-label">PR 5K (menit) — opsional</label>
+                <input type="number" step="0.01" min="0" class="form-control"
+                       id="pr_5k_menit" name="pr_5k_menit"
+                       value="{{ pelari.pr_5k_menit if pelari and pelari.pr_5k_menit else '' }}">
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    {{ 'Simpan Perubahan' if pelari else 'Tambah Pelari' }}
+                </button>
+                <a href="{{ url_for('admin_pelari_list') }}" class="btn btn-outline-secondary">Batal</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

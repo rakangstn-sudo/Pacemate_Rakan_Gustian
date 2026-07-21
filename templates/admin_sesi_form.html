@@ -1,0 +1,74 @@
+<!--
+  admin_sesi_form.html
+  Form untuk Tambah atau Edit sesi latihan.
+  Jika variabel 'sesi' ada -> mode edit, jika tidak -> mode tambah.
+-->
+{% extends "admin_base.html" %}
+
+{% block title %}{{ 'Edit' if sesi else 'Tambah' }} Sesi Latihan{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-3">{{ 'Edit' if sesi else 'Tambah' }} Sesi Latihan</h2>
+
+<div class="card shadow-sm" style="max-width: 600px;">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="pelari_id" class="form-label">Pelari</label>
+                <select class="form-select" id="pelari_id" name="pelari_id" required>
+                    <option value="" disabled {{ 'selected' if not sesi else '' }}>-- Pilih pelari --</option>
+                    {% for p in daftar_pelari %}
+                        <option value="{{ p.id }}"
+                            {{ 'selected' if sesi and sesi.pelari_id == p.id else '' }}>
+                            {{ p.nama }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="tanggal" class="form-label">Tanggal</label>
+                <input type="date" class="form-control" id="tanggal" name="tanggal"
+                       value="{{ sesi.tanggal if sesi else '' }}" required>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="jarak_km" class="form-label">Jarak (km)</label>
+                    <input type="number" step="0.01" min="0.01" class="form-control"
+                           id="jarak_km" name="jarak_km"
+                           value="{{ sesi.jarak_km if sesi else '' }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="waktu_menit" class="form-label">Waktu (menit)</label>
+                    <input type="number" step="0.01" min="0.01" class="form-control"
+                           id="waktu_menit" name="waktu_menit"
+                           value="{{ sesi.waktu_menit if sesi else '' }}" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="jenis_latihan" class="form-label">Jenis Latihan</label>
+                <select class="form-select" id="jenis_latihan" name="jenis_latihan" required>
+                    <option value="" disabled {{ 'selected' if not sesi else '' }}>-- Pilih jenis --</option>
+                    <option value="easy"
+                        {{ 'selected' if sesi and sesi.jenis_latihan == 'easy' else '' }}>Easy</option>
+                    <option value="tempo"
+                        {{ 'selected' if sesi and sesi.jenis_latihan == 'tempo' else '' }}>Tempo</option>
+                    <option value="interval"
+                        {{ 'selected' if sesi and sesi.jenis_latihan == 'interval' else '' }}>Interval</option>
+                    <option value="long_run"
+                        {{ 'selected' if sesi and sesi.jenis_latihan == 'long_run' else '' }}>Long Run</option>
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    {{ 'Simpan Perubahan' if sesi else 'Tambah Sesi' }}
+                </button>
+                <a href="{{ url_for('admin_sesi_list') }}" class="btn btn-outline-secondary">Batal</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

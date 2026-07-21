@@ -1,0 +1,92 @@
+<!--
+  admin_dashboard.html
+  Dashboard admin: kartu ringkasan (total pelari, total sesi, total km
+  minggu ini) + grafik rata-rata pace mingguan 4 minggu terakhir (Chart.js).
+-->
+{% extends "admin_base.html" %}
+
+{% block title %}Dashboard Admin{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-4">Dashboard Admin</h2>
+
+<!-- ===== KARTU RINGKASAN ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Total Pelari</div>
+                <div class="fs-2 fw-bold text-primary">{{ total_pelari }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Total Sesi Latihan</div>
+                <div class="fs-2 fw-bold text-success">{{ total_sesi }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm text-center">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Total KM Minggu Ini</div>
+                <div class="fs-2 fw-bold text-info">{{ "%.1f"|format(total_km_minggu) }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== GRAFIK RATA-RATA PACE 4 MINGGU TERAKHIR ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Rata-rata Pace Mingguan (4 Minggu Terakhir)</h5>
+        <p class="text-muted small">
+            Grafik garis menampilkan rata-rata pace (menit/km) dari seluruh sesi
+            latihan per minggu. Semakin rendah berarti semakin cepat.
+        </p>
+        <canvas id="chartPaceMingguan" height="100"></canvas>
+    </div>
+</div>
+
+<!-- Chart.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    // Data dikirim dari backend sebagai JSON-safe list
+    const labels = {{ chart_labels | tojson }};
+    const dataValues = {{ chart_values | tojson }};
+
+    new Chart(document.getElementById('chartPaceMingguan'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Rata-rata Pace (menit/km)',
+                data: dataValues,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 5,
+                pointBackgroundColor: '#0d6efd',
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: { display: true, text: 'Pace (menit/km)' },
+                    // Pace: angka lebih kecil = lebih cepat, jadi kita bisa
+                    // reverse axis agar "lebih baik" di atas, tapi standarnya
+                    // biarkan normal supaya intuitif bagi pengguna non-runner.
+                },
+                x: {
+                    title: { display: true, text: 'Minggu' }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
